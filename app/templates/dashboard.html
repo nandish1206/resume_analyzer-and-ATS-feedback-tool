@@ -15,6 +15,12 @@
     </a>
 </p>
 
+<p>
+    <a href="{{ url_for('main.job_details') }}">
+        Enter Target Job Details
+    </a>
+</p>
+
 <form method="POST" action="{{ url_for('main.logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit">Log Out</button>

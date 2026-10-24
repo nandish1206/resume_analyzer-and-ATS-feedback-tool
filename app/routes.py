@@ -228,6 +228,64 @@ def upload_resume():
     return render_template("upload.html")
 
 
+
+@main_bp.route("/job-details", methods=["GET", "POST"])
+@login_required
+def job_details():
+    target_role = session.get("target_role", "")
+    job_description = session.get("job_description", "")
+
+    if request.method == "POST":
+        target_role = request.form.get("target_role", "").strip()
+        job_description = request.form.get("job_description", "").strip()
+
+        # At least one field must be provided.
+        if not target_role and not job_description:
+            flash(
+                "Please enter a target job role, a job description, or both.",
+                "danger",
+            )
+            return render_template(
+                "job_details.html",
+                target_role=target_role,
+                job_description=job_description,
+            ), 400
+
+        if len(target_role) > 150:
+            flash(
+                "Target job role must not exceed 150 characters.",
+                "danger",
+            )
+            return render_template(
+                "job_details.html",
+                target_role=target_role,
+                job_description=job_description,
+            ), 400
+
+        if len(job_description) > 15000:
+            flash(
+                "Job description must not exceed 15,000 characters.",
+                "danger",
+            )
+            return render_template(
+                "job_details.html",
+                target_role=target_role,
+                job_description=job_description,
+            ), 400
+
+        # Store the supplied values for later AI analysis.
+        session["target_role"] = target_role
+        session["job_description"] = job_description
+
+        flash("Job details saved successfully.", "success")
+        return redirect(url_for("main.job_details"))
+
+    return render_template(
+        "job_details.html",
+        target_role=target_role,
+        job_description=job_description,
+    )
+
 @main_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
