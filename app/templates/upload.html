@@ -1,0 +1,43 @@
+
+{% extends "base.html" %}
+
+{% block title %}Upload Resume | Resume Analyzer{% endblock %}
+
+{% block content %}
+<h2>Upload Your Resume</h2>
+
+<p>Upload your resume in PDF or DOCX format.</p>
+<p>Maximum file size: 5 MB.</p>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label for="resume">Choose your resume:</label>
+    <input
+        type="file"
+        id="resume"
+        name="resume"
+        accept=".pdf,.docx"
+        required
+    >
+
+    <button type="submit">Upload Resume</button>
+</form>
+
+{% if extracted_text %}
+    <hr>
+
+    <h2>Extracted Resume Text</h2>
+
+    <p>
+        <strong>File:</strong> {{ uploaded_filename }}
+    </p>
+
+    <textarea
+        rows="20"
+        cols="80"
+        readonly
+    >{{ extracted_text }}</textarea>
+{% endif %}
+
+{% endblock %}

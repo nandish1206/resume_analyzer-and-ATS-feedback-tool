@@ -1,0 +1,51 @@
+
+{% extends "base.html" %}
+
+{% block title %}Job Details | Resume Analyzer{% endblock %}
+
+{% block content %}
+<h1>Target Job Details</h1>
+
+<p>
+    Provide a target job role, a job description, or both.
+    At least one field is required.
+</p>
+
+<form method="POST" action="{{ url_for('main.job_details') }}">
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+    <div>
+        <label for="target_role">Target Job Role (Optional)</label>
+        <input
+            type="text"
+            id="target_role"
+            name="target_role"
+            maxlength="150"
+            value="{{ target_role }}"
+            placeholder="e.g. Python Developer"
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label for="job_description">Job Description (Optional)</label>
+        <textarea
+            id="job_description"
+            name="job_description"
+            rows="15"
+            maxlength="15000"
+            placeholder="Paste the complete job description here..."
+        >{{ job_description }}</textarea>
+
+        <p>Maximum length: 15,000 characters.</p>
+    </div>
+
+    <button type="submit">Save Job Details</button>
+</form>
+
+{% endblock %}

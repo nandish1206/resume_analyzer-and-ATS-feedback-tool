@@ -1,23 +1,33 @@
 
+import os
 import re
+import uuid
 from functools import wraps
 
 from flask import (
     Blueprint,
+    current_app,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
-    url_for,
-    flash,
     session,
+    url_for,
 )
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import User
+from app.utils.text_extraction import (
+    extract_resume_text,
+    ResumeExtractionError,
+)
 
 main_bp = Blueprint("main", __name__)
+
+ALLOWED_EXTENSIONS = {"pdf", "docx"}
 
 
 def login_required(view):
@@ -26,17 +36,22 @@ def login_required(view):
         if "user_id" not in session:
             flash("Please log in to continue.", "warning")
             return redirect(url_for("main.login"))
-
         return view(*args, **kwargs)
 
     return wrapped_view
+
+
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
 
 
 @main_bp.route("/")
 def home():
     if "user_id" in session:
         return redirect(url_for("main.dashboard"))
-
     return redirect(url_for("main.login"))
 
 
@@ -90,7 +105,6 @@ def register():
 
         user = User(name=name, email=email)
         user.set_password(password)
-
         db.session.add(user)
 
         try:
@@ -145,6 +159,132 @@ def dashboard():
         user_name=session.get("user_name", "User"),
     )
 
+
+@main_bp.route("/upload", methods=["GET", "POST"])
+@login_required
+def upload_resume():
+    if request.method == "POST":
+        if "resume" not in request.files:
+            flash("Please select a resume file.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        file = request.files["resume"]
+
+        if not file.filename or not file.filename.strip():
+            flash("Please select a file to upload.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        if not allowed_file(file.filename):
+            flash("Only PDF and DOCX files are allowed.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        original_filename = secure_filename(file.filename)
+
+        if not original_filename:
+            flash("Invalid filename.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        extension = original_filename.rsplit(".", 1)[1].lower()
+        stored_filename = f"{uuid.uuid4().hex}.{extension}"
+
+        upload_path = os.path.join(
+            current_app.config["UPLOAD_FOLDER"],
+            stored_filename,
+        )
+
+        try:
+            file.save(upload_path)
+            extracted_text = extract_resume_text(upload_path)
+
+        except ResumeExtractionError as exc:
+            if os.path.exists(upload_path):
+                os.remove(upload_path)
+
+            flash(str(exc), "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        except OSError:
+            current_app.logger.exception(
+                "Unable to save or read the uploaded resume."
+            )
+
+            if os.path.exists(upload_path):
+                os.remove(upload_path)
+
+            flash(
+                "Unable to save or read the file. Please try again.",
+                "danger",
+            )
+            return redirect(url_for("main.upload_resume"))
+
+        flash("Resume uploaded and text extracted successfully.", "success")
+
+        return render_template(
+            "upload.html",
+            extracted_text=extracted_text,
+            uploaded_filename=original_filename,
+        )
+
+    return render_template("upload.html")
+
+
+
+@main_bp.route("/job-details", methods=["GET", "POST"])
+@login_required
+def job_details():
+    target_role = session.get("target_role", "")
+    job_description = session.get("job_description", "")
+
+    if request.method == "POST":
+        target_role = request.form.get("target_role", "").strip()
+        job_description = request.form.get("job_description", "").strip()
+
+        # At least one field must be provided.
+        if not target_role and not job_description:
+            flash(
+                "Please enter a target job role, a job description, or both.",
+                "danger",
+            )
+            return render_template(
+                "job_details.html",
+                target_role=target_role,
+                job_description=job_description,
+            ), 400
+
+        if len(target_role) > 150:
+            flash(
+                "Target job role must not exceed 150 characters.",
+                "danger",
+            )
+            return render_template(
+                "job_details.html",
+                target_role=target_role,
+                job_description=job_description,
+            ), 400
+
+        if len(job_description) > 15000:
+            flash(
+                "Job description must not exceed 15,000 characters.",
+                "danger",
+            )
+            return render_template(
+                "job_details.html",
+                target_role=target_role,
+                job_description=job_description,
+            ), 400
+
+        # Store the supplied values for later AI analysis.
+        session["target_role"] = target_role
+        session["job_description"] = job_description
+
+        flash("Job details saved successfully.", "success")
+        return redirect(url_for("main.job_details"))
+
+    return render_template(
+        "job_details.html",
+        target_role=target_role,
+        job_description=job_description,
+    )
 
 @main_bp.route("/logout", methods=["POST"])
 @login_required
