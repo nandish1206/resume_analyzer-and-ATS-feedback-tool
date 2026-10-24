@@ -1,6 +1,10 @@
 
 import re
 from functools import wraps
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from flask import current_app
 
 from flask import (
     Blueprint,
@@ -144,6 +148,63 @@ def dashboard():
         "dashboard.html",
         user_name=session.get("user_name", "User"),
     )
+
+ALLOWED_EXTENSIONS = {"pdf", "docx"}
+
+
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
+
+
+@main_bp.route("/upload", methods=["GET", "POST"])
+@login_required
+def upload_resume():
+    if request.method == "POST":
+        if "resume" not in request.files:
+            flash("Please select a resume file.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        file = request.files["resume"]
+
+        if not file.filename or not file.filename.strip():
+            flash("Please select a file to upload.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        if not allowed_file(file.filename):
+            flash("Only PDF and DOCX files are allowed.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        original_filename = secure_filename(file.filename)
+
+        if not original_filename:
+            flash("Invalid filename.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        extension = original_filename.rsplit(".", 1)[1].lower()
+        stored_filename = f"{uuid.uuid4().hex}.{extension}"
+
+        upload_path = os.path.join(
+            current_app.config["UPLOAD_FOLDER"],
+            stored_filename,
+        )
+
+        try:
+            file.save(upload_path)
+        except OSError:
+            current_app.logger.exception("Resume upload failed.")
+            flash("Unable to save the file. Please try again.", "danger")
+            return redirect(url_for("main.upload_resume"))
+
+        flash(
+            f"Resume '{original_filename}' uploaded successfully.",
+            "success",
+        )
+        return redirect(url_for("main.upload_resume"))
+
+    return render_template("upload.html")
 
 
 @main_bp.route("/logout", methods=["POST"])
