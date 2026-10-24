@@ -1,27 +1,33 @@
 
-import re
-from functools import wraps
 import os
+import re
 import uuid
-from werkzeug.utils import secure_filename
-from flask import current_app
+from functools import wraps
 
 from flask import (
     Blueprint,
+    current_app,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
-    url_for,
-    flash,
     session,
+    url_for,
 )
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import User
+from app.utils.text_extraction import (
+    extract_resume_text,
+    ResumeExtractionError,
+)
 
 main_bp = Blueprint("main", __name__)
+
+ALLOWED_EXTENSIONS = {"pdf", "docx"}
 
 
 def login_required(view):
@@ -30,17 +36,22 @@ def login_required(view):
         if "user_id" not in session:
             flash("Please log in to continue.", "warning")
             return redirect(url_for("main.login"))
-
         return view(*args, **kwargs)
 
     return wrapped_view
+
+
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
 
 
 @main_bp.route("/")
 def home():
     if "user_id" in session:
         return redirect(url_for("main.dashboard"))
-
     return redirect(url_for("main.login"))
 
 
@@ -94,7 +105,6 @@ def register():
 
         user = User(name=name, email=email)
         user.set_password(password)
-
         db.session.add(user)
 
         try:
@@ -149,15 +159,6 @@ def dashboard():
         user_name=session.get("user_name", "User"),
     )
 
-ALLOWED_EXTENSIONS = {"pdf", "docx"}
-
-
-def allowed_file(filename):
-    return (
-        "." in filename
-        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-    )
-
 
 @main_bp.route("/upload", methods=["GET", "POST"])
 @login_required
@@ -193,16 +194,36 @@ def upload_resume():
 
         try:
             file.save(upload_path)
-        except OSError:
-            current_app.logger.exception("Resume upload failed.")
-            flash("Unable to save the file. Please try again.", "danger")
+            extracted_text = extract_resume_text(upload_path)
+
+        except ResumeExtractionError as exc:
+            if os.path.exists(upload_path):
+                os.remove(upload_path)
+
+            flash(str(exc), "danger")
             return redirect(url_for("main.upload_resume"))
 
-        flash(
-            f"Resume '{original_filename}' uploaded successfully.",
-            "success",
+        except OSError:
+            current_app.logger.exception(
+                "Unable to save or read the uploaded resume."
+            )
+
+            if os.path.exists(upload_path):
+                os.remove(upload_path)
+
+            flash(
+                "Unable to save or read the file. Please try again.",
+                "danger",
+            )
+            return redirect(url_for("main.upload_resume"))
+
+        flash("Resume uploaded and text extracted successfully.", "success")
+
+        return render_template(
+            "upload.html",
+            extracted_text=extracted_text,
+            uploaded_filename=original_filename,
         )
-        return redirect(url_for("main.upload_resume"))
 
     return render_template("upload.html")
 
