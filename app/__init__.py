@@ -3,8 +3,11 @@ import os
 
 from dotenv import load_dotenv
 from flask import Flask
+from flask_migrate import Migrate
 
 from app.extensions import db, csrf
+
+migrate = Migrate()
 
 load_dotenv()
 
@@ -33,6 +36,7 @@ def create_app():
         raise RuntimeError("DATABASE_URL is missing from .env")
 
     db.init_app(app)
+    migrate.init_app(app, db)
     csrf.init_app(app)
 
     from app import models

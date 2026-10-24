@@ -34,6 +34,9 @@ def login_required(view):
 
 @main_bp.route("/")
 def home():
+    if "user_id" in session:
+        return redirect(url_for("main.dashboard"))
+
     return redirect(url_for("main.login"))
 
 
@@ -46,9 +49,7 @@ def register():
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
-        confirm_password = request.form.get(
-            "confirm_password", ""
-        )
+        confirm_password = request.form.get("confirm_password", "")
 
         if not all([name, email, password, confirm_password]):
             flash("All fields are required.", "danger")
@@ -60,9 +61,7 @@ def register():
 
         if (
             len(email) > 255
-            or not re.fullmatch(
-                r"[^@\s]+@[^@\s]+\.[^@\s]+", email
-            )
+            or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)
         ):
             flash("Enter a valid email address.", "danger")
             return render_template("register.html")
@@ -83,7 +82,10 @@ def register():
         )
 
         if existing_user:
-            flash("An account with this email already exists.", "danger")
+            flash(
+                "An account with this email already exists.",
+                "danger",
+            )
             return render_template("register.html")
 
         user = User(name=name, email=email)
@@ -95,7 +97,10 @@ def register():
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
-            flash("An account with this email already exists.", "danger")
+            flash(
+                "An account with this email already exists.",
+                "danger",
+            )
             return render_template("register.html")
 
         flash("Registration successful. Please log in.", "success")
