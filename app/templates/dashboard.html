@@ -1,13 +1,55 @@
-
 {% extends "base.html" %}
 {% block title %}Dashboard | Resume Analyzer{% endblock %}
 
 {% block content %}
+
 <h1>Resume Analyzer and ATS Feedback Tool</h1>
 
 <h2>Welcome, {{ user_name }}!</h2>
-
 <p>You are logged in successfully.</p>
+
+<hr>
+
+<h2>Resume Match Score</h2>
+
+{% if match_score is not none %}
+
+    <h3>{{ match_score }}/100 — {{ score_label }}</h3>
+
+    <div
+        role="progressbar"
+        aria-label="Estimated resume compatibility score"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="{{ match_score }}"
+        style="width: 100%; max-width: 500px; height: 18px;
+               background-color: #e5e7eb; border-radius: 10px;
+               overflow: hidden;"
+    >
+        <div
+            style="width: {{ match_score }}%; height: 100%;
+                   background-color: #16a34a;"
+        ></div>
+    </div>
+
+    <p><strong>ATS Score:</strong> {{ ats_score }}/100</p>
+    <p><strong>Job Match:</strong> {{ match_percentage }}%</p>
+
+    <p>
+        This score is an AI-generated estimate, not a guaranteed
+        score from an actual ATS platform.
+    </p>
+
+{% else %}
+
+    <p>No completed resume analysis is available yet.</p>
+    <p>Upload your resume and complete an analysis to see your score.</p>
+
+{% endif %}
+
+<hr>
+
+<h2>Resume Analysis</h2>
 
 <p>
     <a href="{{ url_for('main.upload_resume') }}">
@@ -21,8 +63,27 @@
     </a>
 </p>
 
+<hr>
+
+<h2>Analysis History</h2>
+
+<p>View your previous resume analyses and their scores.</p>
+
+<p>
+    <a href="{{ url_for('main.history') }}">
+        View Analysis History
+    </a>
+</p>
+
+<hr>
+
 <form method="POST" action="{{ url_for('main.logout') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
     <button type="submit">Log Out</button>
 </form>
+
 {% endblock %}

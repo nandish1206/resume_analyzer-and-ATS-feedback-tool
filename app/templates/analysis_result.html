@@ -1,0 +1,149 @@
+
+{% extends "base.html" %}
+
+{% block title %}Resume Analysis Results | Resume Analyzer{% endblock %}
+
+{% block content %}
+<h1>Resume Analysis Results</h1>
+
+<p>
+    Analysis for:
+    <strong>{{ target_role if target_role else "Job description provided" }}</strong>
+</p>
+
+<hr>
+
+<section>
+    <h2>Overall Resume Match Score</h2>
+
+    <h3>{{ match_score }}/100 — {{ score_label }}</h3>
+
+    <div
+        role="progressbar"
+        aria-label="Overall resume match score"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="{{ match_score }}"
+        style="max-width: 500px; height: 20px; background: #e5e7eb;
+               border-radius: 10px; overflow: hidden;"
+    >
+        <div
+            style="width: {{ match_score }}%; height: 100%;
+                   background: #16a34a;"
+        ></div>
+    </div>
+
+    <p><strong>ATS Score:</strong> {{ result.ats_score }}/100</p>
+    <p><strong>Job Match:</strong> {{ result.match_percentage }}%</p>
+
+    <p>
+        These are AI-generated estimates, not guaranteed scores
+        from an actual ATS platform.
+    </p>
+</section>
+
+<hr>
+
+<section>
+    <h2>Summary</h2>
+    <p>{{ result.summary }}</p>
+</section>
+
+<hr>
+
+<section>
+    <h2>Matched Skills</h2>
+    {% if result.matched_skills %}
+        <ul>
+            {% for skill in result.matched_skills %}
+                <li>{{ skill }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No matched skills were identified.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Missing Skills</h2>
+    {% if result.missing_skills %}
+        <ul>
+            {% for skill in result.missing_skills %}
+                <li>{{ skill }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No missing skills were identified.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Strengths</h2>
+    {% if result.strengths %}
+        <ul>
+            {% for item in result.strengths %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No specific strengths were identified.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Missing Keywords</h2>
+    {% if result.keywords_missing %}
+        <ul>
+            {% for keyword in result.keywords_missing %}
+                <li>{{ keyword }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No missing keywords were identified.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Improvement Suggestions</h2>
+    {% if result.improvement_suggestions %}
+        <ol>
+            {% for suggestion in result.improvement_suggestions %}
+                <li>{{ suggestion }}</li>
+            {% endfor %}
+        </ol>
+    {% else %}
+        <p>No improvement suggestions were returned.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Experience Assessment</h2>
+    <p>{{ result.experience_assessment }}</p>
+
+    <h2>Education Assessment</h2>
+    <p>{{ result.education_assessment }}</p>
+</section>
+
+<section>
+    <h2>Interview Questions</h2>
+    {% if result.interview_questions %}
+        <ol>
+            {% for question in result.interview_questions %}
+                <li>{{ question }}</li>
+            {% endfor %}
+        </ol>
+    {% else %}
+        <p>No interview questions were generated.</p>
+    {% endif %}
+</section>
+
+<hr>
+
+<p>
+    <a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+</p>
+
+<p>
+    <a href="{{ url_for('main.upload_resume') }}">Upload Another Resume</a>
+</p>
+{% endblock %}

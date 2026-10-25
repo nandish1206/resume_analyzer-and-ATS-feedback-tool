@@ -11,7 +11,11 @@
     At least one field is required.
 </p>
 
-<form method="POST" action="{{ url_for('main.job_details') }}">
+<form
+    id="job-details-form"
+    method="POST"
+    action="{{ url_for('main.job_details') }}"
+>
     <input
         type="hidden"
         name="csrf_token"
@@ -46,6 +50,28 @@
     </div>
 
     <button type="submit">Save Job Details</button>
+    <button id="analyze-button" type="submit">
+    Save Details and Analyze Resume
+</button>
+
+<p id="loading-message" role="status" hidden>
+    Analyzing your resume with AI. This may take a little while.
+    Please keep this page open.
+</p>
+
+<script>
+    document.getElementById("job-details-form").addEventListener(
+        "submit",
+        function () {
+            const button = document.getElementById("analyze-button");
+            const message = document.getElementById("loading-message");
+
+            button.disabled = true;
+            button.textContent = "Analyzing...";
+            message.hidden = false;
+        }
+    );
+</script>
 </form>
 
 {% endblock %}

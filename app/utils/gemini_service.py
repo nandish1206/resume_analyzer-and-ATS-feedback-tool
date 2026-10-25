@@ -1,10 +1,14 @@
 
+import logging
 import os
 
-from google import genai
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiServiceError(Exception):
@@ -12,35 +16,35 @@ class GeminiServiceError(Exception):
 
 
 def generate_ai_response(prompt: str) -> str:
-    """
-    Send a text prompt to Gemini and return the generated text.
-
-    Args:
-        prompt: The prompt to send to Gemini.
-
-    Returns:
-        Generated text from Gemini.
-
-    Raises:
-        GeminiServiceError: If configuration, request, or response fails.
-    """
     if not isinstance(prompt, str) or not prompt.strip():
         raise ValueError("Prompt must be a non-empty string.")
 
     api_key = os.getenv("GEMINI_API_KEY")
-    model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    model_name = os.getenv("GEMINI_MODEL")
 
     if not api_key:
         raise GeminiServiceError(
-            "GEMINI_API_KEY is missing. Add it to your .env file."
+            "GEMINI_API_KEY is missing from the .env file."
+        )
+
+    if not model_name:
+        raise GeminiServiceError(
+            "GEMINI_MODEL is missing from the .env file."
         )
 
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=60000),
+        )
 
         response = client.models.generate_content(
             model=model_name,
             contents=prompt.strip(),
+            config=types.GenerateContentConfig(
+                max_output_tokens=1024,
+                response_mime_type="application/json",
+            ),
         )
 
         generated_text = response.text
@@ -54,9 +58,12 @@ def generate_ai_response(prompt: str) -> str:
 
     except GeminiServiceError:
         raise
+
     except Exception as exc:
-        # Do not expose API keys or raw provider errors to the UI.
+        logger.exception(
+            "Gemini request failed for configured model %s",
+            model_name,
+        )
         raise GeminiServiceError(
-            "Gemini API request failed. Check your API key, model name, "
-            "internet connection, quota, and API configuration."
+            "Gemini request failed. Check the terminal logs for details."
         ) from exc

@@ -240,7 +240,7 @@ def analyze_resume(
         response_text = generate_ai_response(prompt)
     except GeminiServiceError as exc:
         raise ResumeAnalysisError(
-            "Unable to analyze the resume using Gemini. Please try again."
+            f"Gemini service failed: {exc}"
         ) from exc
 
     # Remove optional Markdown fences if the model returns them.
