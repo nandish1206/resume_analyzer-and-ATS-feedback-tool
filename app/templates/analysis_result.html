@@ -4,215 +4,393 @@
 {% block title %}Resume Analysis Results | Resume Analyzer{% endblock %}
 
 {% block content %}
-<h1>Resume Analysis Results</h1>
+<section class="results-page">
 
-<p>
-    Analysis for:
-    <strong>{{ target_role if target_role else "Job description provided" }}</strong>
-</p>
+    <header class="results-hero">
+        <div class="results-hero-copy">
+            <span class="eyebrow">AI RESUME INTELLIGENCE</span>
+            <h1>Your resume, <span class="text-gradient">decoded.</span></h1>
+            <p>Review your strengths, discover skill gaps, and take the next step toward your target role.</p>
+            <div class="results-target-role">
+                <span class="results-role-icon" aria-hidden="true">✦</span>
+                <div>
+                    <span>Analysis for</span>
+                    <strong>{{ target_role if target_role else "Job description provided" }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="results-hero-decoration" aria-hidden="true">
+            <div class="results-orbit results-orbit-one"></div>
+            <div class="results-orbit results-orbit-two"></div>
+            <div class="results-orbit-core">AI</div>
+            <span class="results-orbit-star star-one">✦</span>
+            <span class="results-orbit-star star-two">✧</span>
+        </div>
+    </header>
 
-<hr>
+    <section class="results-score-grid" aria-label="Resume scores">
 
-<section>
-    <h2>Overall Resume Match Score</h2>
+        <article class="results-score-card results-match-card">
+            <div class="results-score-card-top">
+                <span class="results-score-label">Overall Resume Match</span>
+                <span class="results-score-icon">◎</span>
+            </div>
+            <div class="results-match-content">
+                <div class="results-score-ring"
+                     role="progressbar"
+                     aria-label="Overall resume match score"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ match_score }}"
+                     style="--score: {{ [[match_score|float, 0]|max, 100]|min }}%;">
+                    <div class="results-score-ring-inner">
+                        <strong>{{ match_score }}</strong>
+                        <span>/100</span>
+                    </div>
+                </div>
+                <div class="results-match-description">
+                    <span class="results-score-label">Match assessment</span>
+                    <h2>{{ score_label }}</h2>
+                    <p>Estimated alignment between your resume and the target role.</p>
+                </div>
+            </div>
+        </article>
 
-    <h3>{{ match_score }}/100 — {{ score_label }}</h3>
+        <article class="results-score-card">
+            <div class="results-score-card-top">
+                <span class="results-score-label">ATS Score</span>
+                <span class="results-score-icon score-icon-purple">▤</span>
+            </div>
+            <div class="results-big-score">
+                <strong>{{ result.ats_score }}</strong><span>/100</span>
+            </div>
+            <div class="results-linear-track">
+                <span style="width: {{ [[result.ats_score|float, 0]|max, 100]|min }}%;"></span>
+            </div>
+            <p class="results-score-footnote">Estimated resume compatibility</p>
+        </article>
 
-    <div
-        role="progressbar"
-        aria-label="Overall resume match score"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        aria-valuenow="{{ match_score }}"
-        style="max-width: 500px; height: 20px; background: #e5e7eb;
-               border-radius: 10px; overflow: hidden;"
-    >
-        <div
-            style="width: {{ match_score }}%; height: 100%;
-                   background: #16a34a;"
-        ></div>
+        <article class="results-score-card">
+            <div class="results-score-card-top">
+                <span class="results-score-label">Job Match</span>
+                <span class="results-score-icon score-icon-green">↗</span>
+            </div>
+            <div class="results-big-score">
+                <strong>{{ result.match_percentage }}</strong><span>%</span>
+            </div>
+            <div class="results-linear-track results-track-green">
+                <span style="width: {{ [[result.match_percentage|float, 0]|max, 100]|min }}%;"></span>
+            </div>
+            <p class="results-score-footnote">Estimated match with job requirements</p>
+        </article>
+
+    </section>
+
+    <p class="results-disclaimer">
+        <span aria-hidden="true">ⓘ</span>
+        These scores are AI-generated estimates, not guaranteed scores from an actual ATS platform.
+    </p>
+
+    <section class="results-section results-summary-card">
+        <div class="results-section-heading">
+            <span class="results-section-icon">✧</span>
+            <div>
+                <span class="eyebrow">THE BIG PICTURE</span>
+                <h2>Resume summary</h2>
+            </div>
+        </div>
+        <p class="results-summary-text">{{ result.summary }}</p>
+    </section>
+
+    <div class="results-two-column">
+
+        <section class="results-section">
+            <div class="results-section-heading">
+                <span class="results-section-icon results-icon-green">✓</span>
+                <div>
+                    <h2>Matched Skills</h2>
+                    <p>Skills in your resume that align with the role.</p>
+                </div>
+            </div>
+            {% if result.matched_skills %}
+                <div class="results-skill-list">
+                    {% for skill in result.matched_skills %}
+                        <span class="results-skill-badge skill-matched">
+                            <span aria-hidden="true">✓</span> {{ skill }}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="results-empty-note">No matched skills were identified.</p>
+            {% endif %}
+        </section>
+
+        <section class="results-section">
+            <div class="results-section-heading">
+                <span class="results-section-icon results-icon-red">!</span>
+                <div>
+                    <h2>Missing Skills</h2>
+                    <p>Skills that may need to be demonstrated in your resume.</p>
+                </div>
+            </div>
+            {% if result.missing_skills %}
+                <div class="results-skill-list">
+                    {% for skill in result.missing_skills %}
+                        <span class="results-skill-badge skill-missing">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="results-empty-note">No missing skills were identified.</p>
+            {% endif %}
+        </section>
+
     </div>
 
-    <p><strong>ATS Score:</strong> {{ result.ats_score }}/100</p>
-    <p><strong>Job Match:</strong> {{ result.match_percentage }}%</p>
+    <section class="results-section">
+        <div class="results-section-heading">
+            <span class="results-section-icon results-icon-amber">↗</span>
+            <div>
+                <h2>Underrepresented Skills</h2>
+                <p>Skills that may need stronger project details or supporting evidence.</p>
+            </div>
+        </div>
 
-    <p>
-        These are AI-generated estimates, not guaranteed scores
-        from an actual ATS platform.
-    </p>
-</section>
+        {% if result.underrepresented_skills %}
+            <div class="results-detail-grid">
+                {% for item in result.underrepresented_skills %}
+                    <article class="results-detail-card">
+                        <span class="results-card-kicker">EVIDENCE GAP</span>
+                        <h3>{{ item.skill }}</h3>
+                        <div class="results-evidence-block">
+                            <strong>Resume evidence</strong>
+                            <p>{{ item.resume_evidence }}</p>
+                        </div>
+                        <div class="results-evidence-block evidence-gap-block">
+                            <strong>Evidence gap</strong>
+                            <p>{{ item.evidence_gap }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="results-empty-note">No underrepresented skills were identified.</p>
+        {% endif %}
+    </section>
 
-<hr>
+    <section class="results-section">
+        <div class="results-section-heading">
+            <span class="results-section-icon results-icon-purple">✦</span>
+            <div>
+                <h2>Skill Gap Recommendations</h2>
+                <p>Prioritized actions to improve your alignment with the target role.</p>
+            </div>
+        </div>
 
-<section>
-    <h2>Summary</h2>
-    <p>{{ result.summary }}</p>
-</section>
+        {% if result.skill_gap_recommendations %}
+            <div class="results-recommendation-list">
+                {% for item in result.skill_gap_recommendations %}
+                    <article class="results-recommendation-card">
+                        <div class="results-recommendation-number">
+                            {{ "%02d"|format(loop.index) }}
+                        </div>
+                        <div class="results-recommendation-content">
+                            <div class="results-recommendation-title">
+                                <h3>{{ item.skill }}</h3>
+                                <span class="results-priority-badge
+                                    {% if item.priority|lower == 'high' %}priority-high
+                                    {% elif item.priority|lower == 'medium' %}priority-medium
+                                    {% else %}priority-other{% endif %}">
+                                    {{ item.priority }} priority
+                                </span>
+                            </div>
+                            <span class="results-recommendation-label">Recommended action</span>
+                            <p>{{ item.recommendation }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="results-empty-note">No skill-gap recommendations were returned.</p>
+        {% endif %}
+    </section>
 
-<hr>
+    <div class="results-two-column">
 
-<section>
-    <h2>Matched Skills</h2>
-    <p>Skills identified in your resume that match the job requirements.</p>
+        <section class="results-section">
+            <div class="results-section-heading">
+                <span class="results-section-icon results-icon-green">★</span>
+                <div>
+                    <h2>Strengths</h2>
+                    <p>Positive points identified in your resume.</p>
+                </div>
+            </div>
+            {% if result.strengths %}
+                <ul class="results-check-list">
+                    {% for item in result.strengths %}
+                        <li><span aria-hidden="true">✓</span>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="results-empty-note">No specific strengths were identified.</p>
+            {% endif %}
+        </section>
 
-    {% if result.matched_skills %}
-        <ul>
-            {% for skill in result.matched_skills %}
-                <li>{{ skill }}</li>
+        <section class="results-section">
+            <div class="results-section-heading">
+                <span class="results-section-icon results-icon-amber">⌕</span>
+                <div>
+                    <h2>Missing Keywords</h2>
+                    <p>Terms worth reviewing against the job description.</p>
+                </div>
+            </div>
+            {% if result.keywords_missing %}
+                <div class="results-skill-list">
+                    {% for keyword in result.keywords_missing %}
+                        <span class="results-skill-badge skill-keyword">{{ keyword }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="results-empty-note">No missing keywords were identified.</p>
+            {% endif %}
+        </section>
+
+    </div>
+
+    <section class="results-section results-checklist-section">
+        <div class="results-section-heading">
+            <span class="results-section-icon results-icon-purple">☑</span>
+            <div>
+                <span class="eyebrow">YOUR ACTION PLAN</span>
+                <h2>Resume Improvement Checklist</h2>
+                <p>Complete recommendations and track your progress.</p>
+            </div>
+        </div>
+
+        {% if result.improvement_suggestions %}
+            <div class="results-checklist-progress">
+                <div class="results-checklist-progress-label">
+                    <span id="checklist-progress-text">
+                        {{ completed_suggestions|length }} of {{ result.improvement_suggestions|length }} completed
+                    </span>
+                    <span id="checklist-progress-percent">
+                        {% if result.improvement_suggestions|length %}
+                            {{ ((completed_suggestions|length / result.improvement_suggestions|length) * 100)|round|int }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="results-checklist-track">
+                    <span id="checklist-progress-bar"
+                        style="width: {% if result.improvement_suggestions|length %}{{ ((completed_suggestions|length / result.improvement_suggestions|length) * 100)|round|int }}{% else %}0{% endif %}%;"></span>
+                </div>
+            </div>
+
+            <ul class="results-checklist">
+                {% for suggestion in result.improvement_suggestions %}
+                    <li>
+                        <label class="results-checklist-item">
+                            <input
+                                type="checkbox"
+                                class="improvement-checkbox"
+                                data-index="{{ loop.index0 }}"
+                                {% if loop.index0 in completed_suggestions %}checked{% endif %}
+                            >
+                            <span class="results-custom-checkbox" aria-hidden="true">✓</span>
+                            <span class="results-checklist-text">{{ suggestion }}</span>
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <p id="checklist-status" class="results-save-status"
+               role="status" aria-live="polite">
+                Your progress is saved automatically.
+            </p>
+        {% else %}
+            <p class="results-empty-note">No improvement suggestions are available.</p>
+        {% endif %}
+    </section>
+
+    <div class="results-two-column">
+
+        <section class="results-section">
+            <div class="results-section-heading">
+                <span class="results-section-icon results-icon-purple">▤</span>
+                <div><h2>Experience Assessment</h2></div>
+            </div>
+            <p class="results-body-text">{{ result.experience_assessment }}</p>
+        </section>
+
+        <section class="results-section">
+            <div class="results-section-heading">
+                <span class="results-section-icon results-icon-purple">⌂</span>
+                <div><h2>Education Assessment</h2></div>
+            </div>
+            <p class="results-body-text">{{ result.education_assessment }}</p>
+        </section>
+
+    </div>
+
+    <section class="results-section results-interview-section"
+             id="interview-questions-section">
+        <div class="results-section-heading">
+            <span class="results-section-icon results-icon-purple">✧</span>
+            <div>
+                <span class="eyebrow">PRACTICE WITH PURPOSE</span>
+                <h2>Interview Questions</h2>
+                <p>Questions are generated based on your target role or job description.</p>
+            </div>
+        </div>
+
+        <div class="results-interview-callout">
+            <div>
+                <strong>Keep practicing</strong>
+                <p>Generate five additional questions whenever you're ready for another practice round.</p>
+            </div>
+            <button
+                type="button"
+                id="generate-more-questions"
+                class="btn results-generate-button"
+                {% if not analysis_id %}disabled{% endif %}
+            >
+                Generate More Questions (+5) <span aria-hidden="true">→</span>
+            </button>
+        </div>
+
+        <ol class="results-interview-list" id="interview-questions-list">
+            {% for question in result.interview_questions or [] %}
+                <li><span class="results-question-number">{{ loop.index }}</span><span>{{ question }}</span></li>
             {% endfor %}
-        </ul>
-    {% else %}
-        <p>No matched skills were identified.</p>
-    {% endif %}
-</section>
+        </ol>
 
-<hr>
-
-<section>
-    <h2>Missing skills</h2>
-    <p>Skills the AI identified as required but not demonstrated in your resume.</p>
-
-    {% if result.missing_skills %}
-        <ul>
-            {% for skill in result.missing_skills %}
-                <li>{{ skill }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No missing skills were identified.</p>
-    {% endif %}
-</section>
-
-<hr>
-
-<section>
-    <h2>Underrepresented Skills</h2>
-    <p>
-        Skills mentioned in your resume that may need stronger
-        project details or supporting evidence.
-    </p>
-
-    {% if result.underrepresented_skills %}
-        {% for item in result.underrepresented_skills %}
-            <article>
-                <h3>{{ item.skill }}</h3>
-
-                <p>
-                    <strong>Resume evidence:</strong>
-                    {{ item.resume_evidence }}
-                </p>
-
-                <p>
-                    <strong>Evidence gap:</strong>
-                    {{ item.evidence_gap }}
-                </p>
-            </article>
-            {% if not loop.last %}<hr>{% endif %}
-        {% endfor %}
-    {% else %}
-        <p>No underrepresented skills were identified.</p>
-    {% endif %}
-</section>
-
-<hr>
-
-<section>
-    <h2>Skill Gap Recommendations</h2>
-    <p>Prioritized actions to help you improve your alignment with the target role.</p>
-
-    {% if result.skill_gap_recommendations %}
-        {% for item in result.skill_gap_recommendations %}
-            <article>
-                <h3>{{ item.skill }}</h3>
-
-                <p>
-                    <strong>Priority:</strong>
-                    {{ item.priority }}
-                </p>
-
-                <p>
-                    <strong>Recommended action:</strong>
-                    {{ item.recommendation }}
-                </p>
-            </article>
-            {% if not loop.last %}<hr>{% endif %}
-        {% endfor %}
-    {% else %}
-        <p>No skill-gap recommendations were returned.</p>
-    {% endif %}
-</section>
-
-<hr>
-
-<section>
-    <h2>Strengths</h2>
-    {% if result.strengths %}
-        <ul>
-            {% for item in result.strengths %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No specific strengths were identified.</p>
-    {% endif %}
-</section>
-
-<section>
-    <h2>Missing Keywords</h2>
-    {% if result.keywords_missing %}
-        <ul>
-            {% for keyword in result.keywords_missing %}
-                <li>{{ keyword }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No missing keywords were identified.</p>
-    {% endif %}
-</section>
-
-
-
-<section>
-    <h2>Resume Improvement Checklist</h2>
-
-    <p>
-        Check off each recommendation as you complete it.
-        Your progress will be saved automatically.
-    </p>
-
-    {% if result.improvement_suggestions %}
-        <ul style="list-style: none; padding-left: 0;">
-            {% for suggestion in result.improvement_suggestions %}
-                <li style="margin-bottom: 12px;">
-                    <label>
-                        <input
-                            type="checkbox"
-                            class="improvement-checkbox"
-                            data-index="{{ loop.index0 }}"
-                            {% if loop.index0 in completed_suggestions %}
-                                checked
-                            {% endif %}
-                        >
-                        {{ suggestion }}
-                    </label>
-                </li>
-            {% endfor %}
-        </ul>
-
-        <p id="checklist-status" role="status" aria-live="polite">
-            Your progress is saved automatically.
+        <p id="interview-questions-status" class="results-save-status"
+           role="status" aria-live="polite">
+            {{ (result.interview_questions or [])|length }} questions available.
         </p>
-    {% else %}
-        <p>No improvement suggestions are available.</p>
-    {% endif %}
-</section>
+    </section>
 
+    <nav class="results-bottom-actions" aria-label="Analysis navigation">
+        <a class="btn results-secondary-button"
+           href="{{ url_for('main.dashboard') }}">← Back to Dashboard</a>
+        <a class="btn results-primary-button"
+           href="{{ url_for('main.upload_resume') }}">Analyze Another Resume →</a>
+    </nav>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
 <script>
 (function () {
     const analysisId = {{ analysis_id | tojson }};
     const csrfToken = {{ csrf_token() | tojson }};
     const checkboxes = document.querySelectorAll(".improvement-checkbox");
     const status = document.getElementById("checklist-status");
+    const progressText = document.getElementById("checklist-progress-text");
+    const progressPercent = document.getElementById("checklist-progress-percent");
+    const progressBar = document.getElementById("checklist-progress-bar");
+    const totalSuggestions = checkboxes.length;
 
     if (!checkboxes.length || !status) {
         return;
@@ -221,7 +399,28 @@
     let saving = false;
     let pending = false;
 
+    function updateChecklistProgress() {
+        const completedCount = Array.from(checkboxes)
+            .filter((checkbox) => checkbox.checked).length;
+        const percent = totalSuggestions
+            ? Math.round((completedCount / totalSuggestions) * 100)
+            : 0;
+
+        if (progressText) {
+            progressText.textContent =
+                `${completedCount} of ${totalSuggestions} completed`;
+        }
+        if (progressPercent) {
+            progressPercent.textContent = `${percent}%`;
+        }
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
+    }
+
     async function saveChecklist() {
+        updateChecklistProgress();
+
         if (saving) {
             pending = true;
             return;
@@ -243,9 +442,9 @@
                     {
                         method: "POST",
                         headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRFToken": csrfToken
-                            },
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
+                        },
                         body: JSON.stringify({
                             completed_suggestions: completed
                         })
@@ -272,39 +471,85 @@
     checkboxes.forEach((checkbox) => {
         checkbox.addEventListener("change", saveChecklist);
     });
-        })();
+
+    updateChecklistProgress();
+})();
 </script>
 
+<script>
+(function () {
+    const analysisId = {{ analysis_id | tojson }};
+    const csrfToken = {{ csrf_token() | tojson }};
+    const button = document.getElementById("generate-more-questions");
+    const list = document.getElementById("interview-questions-list");
+    const status = document.getElementById("interview-questions-status");
 
+    if (!button || !list || !status || !analysisId) {
+        return;
+    }
 
-<section>
-    <h2>Experience Assessment</h2>
-    <p>{{ result.experience_assessment }}</p>
+    button.addEventListener("click", async function () {
+        if (button.disabled) {
+            return;
+        }
 
-    <h2>Education Assessment</h2>
-    <p>{{ result.education_assessment }}</p>
-</section>
+        button.disabled = true;
+        button.textContent = "Generating questions...";
+        status.textContent = "Generating five new questions. Please wait.";
 
-<section>
-    <h2>Interview Questions</h2>
-    {% if result.interview_questions %}
-        <ol>
-            {% for question in result.interview_questions %}
-                <li>{{ question }}</li>
-            {% endfor %}
-        </ol>
-    {% else %}
-        <p>No interview questions were generated.</p>
-    {% endif %}
-</section>
+        try {
+            const response = await fetch(
+                `/analysis/${analysisId}/interview-questions`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({})
+                }
+            );
 
-<hr>
+            const data = await response.json();
 
-<p>
-    <a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
-</p>
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Unable to generate more questions."
+                );
+            }
 
-<p>
-    <a href="{{ url_for('main.upload_resume') }}">Upload Another Resume</a>
-</p>
+            if (!Array.isArray(data.new_questions) ||
+                data.new_questions.length !== 5) {
+                throw new Error("The server did not return five new questions.");
+            }
+
+            data.new_questions.forEach(function (question) {
+                const item = document.createElement("li");
+                const number = document.createElement("span");
+                const text = document.createElement("span");
+
+                number.className = "results-question-number";
+                number.textContent = String(list.children.length + 1);
+                text.textContent = question;
+
+                item.appendChild(number);
+                item.appendChild(text);
+                list.appendChild(item);
+            });
+
+            status.textContent =
+                `${data.total_questions} questions available. Five new questions added.`;
+
+        } catch (error) {
+            status.textContent = error.message ||
+                "Unable to generate questions. Please try again.";
+            console.error("Interview question generation failed:", error);
+
+        } finally {
+            button.disabled = false;
+            button.innerHTML = 'Generate More Questions (+5) <span aria-hidden="true">→</span>';
+        }
+    });
+})();
+</script>
 {% endblock %}

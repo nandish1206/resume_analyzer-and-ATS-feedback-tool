@@ -1,77 +1,195 @@
 
 {% extends "base.html" %}
 
-{% block title %}Job Details | Resume Analyzer{% endblock %}
+{% block title %}Target Job Details | Resume Analyzer{% endblock %}
 
 {% block content %}
-<h1>Target Job Details</h1>
+<section class="job-details-page">
 
-<p>
-    Provide a target job role, a job description, or both.
-    At least one field is required.
-</p>
-
-<form
-    id="job-details-form"
-    method="POST"
-    action="{{ url_for('main.job_details') }}"
->
-    <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
-    >
-
-    <div>
-        <label for="target_role">Target Job Role (Optional)</label>
-        <input
-            type="text"
-            id="target_role"
-            name="target_role"
-            maxlength="150"
-            value="{{ target_role }}"
-            placeholder="e.g. Python Developer"
-        >
+    <div class="job-details-heading">
+        <span class="eyebrow">PERSONALIZE YOUR ANALYSIS</span>
+        <h1>Tell us about your <span class="text-gradient">target role.</span></h1>
+        <p>
+            Add the job you're interested in to get more relevant resume feedback,
+            identify skill gaps, and prepare for interviews.
+        </p>
     </div>
 
-    <br>
+    <div class="job-details-layout">
 
-    <div>
-        <label for="job_description">Job Description (Optional)</label>
-        <textarea
-            id="job_description"
-            name="job_description"
-            rows="15"
-            maxlength="15000"
-            placeholder="Paste the complete job description here..."
-        >{{ job_description }}</textarea>
+        <section class="card job-form-card">
+            <div class="job-card-heading">
+                <div class="job-heading-icon" aria-hidden="true">✦</div>
+                <div>
+                    <h2>Job information</h2>
+                    <p>Provide a role, a job description, or both.</p>
+                </div>
+            </div>
 
-        <p>Maximum length: 15,000 characters.</p>
+            <form
+                id="job-details-form"
+                method="POST"
+                action="{{ url_for('main.job_details') }}"
+            >
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
+
+                <div class="job-form-field">
+                    <label for="target_role">
+                        Target job role
+                        <span class="optional-label">Optional</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="target_role"
+                        name="target_role"
+                        maxlength="150"
+                        value="{{ target_role }}"
+                        placeholder="e.g. Python Developer"
+                        autocomplete="organization-title"
+                    >
+
+                    <p class="job-field-help">
+                        Enter the title of the position you're targeting.
+                    </p>
+                </div>
+
+                <div class="job-form-field">
+                    <div class="job-label-row">
+                        <label for="job_description">
+                            Job description
+                            <span class="optional-label">Optional</span>
+                        </label>
+                        <span class="job-character-count" id="job-character-count">
+                            0 / 15,000
+                        </span>
+                    </div>
+
+                    <textarea
+                        id="job_description"
+                        name="job_description"
+                        rows="12"
+                        maxlength="15000"
+                        placeholder="Paste the job description here, including responsibilities, required skills, qualifications, and experience..."
+                    >{{ job_description }}</textarea>
+
+                    <p class="job-field-help">
+                        A complete job description can help the AI tailor its feedback to the position.
+                    </p>
+                </div>
+
+                <div class="job-form-note">
+                    <span aria-hidden="true">ⓘ</span>
+                    <p>At least one field is required. You can provide just the job title if you don't have a job description.</p>
+                </div>
+
+                <button
+                    id="analyze-button"
+                    class="btn job-analyze-button"
+                    type="submit"
+                >
+                    <span id="analyze-button-text">Save Details and Analyze Resume</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+
+                <p class="job-loading-message" id="loading-message"
+                   role="status" aria-live="polite" hidden>
+                    <span class="job-loading-dot"></span>
+                    Analyzing your resume with AI. This may take a little while.
+                    Please keep this page open.
+                </p>
+            </form>
+        </section>
+
+        <aside class="job-guidance-card">
+            <div class="job-guidance-top">
+                <span class="job-guidance-sparkle" aria-hidden="true">✦</span>
+                <span class="eyebrow">YOUR CAREER ASSISTANT</span>
+            </div>
+
+            <h2>Make your analysis more relevant.</h2>
+            <p class="job-guidance-intro">
+                Give the analyzer useful context so you can understand how your resume aligns with your career goal.
+            </p>
+
+            <div class="job-guidance-item">
+                <span class="job-guidance-number">01</span>
+                <div>
+                    <h3>Be specific about the role</h3>
+                    <p>For example, choose “Junior Python Backend Developer” instead of just “Developer.”</p>
+                </div>
+            </div>
+
+            <div class="job-guidance-item">
+                <span class="job-guidance-number">02</span>
+                <div>
+                    <h3>Include the full description</h3>
+                    <p>Responsibilities and required skills give the analysis more context.</p>
+                </div>
+            </div>
+
+            <div class="job-guidance-item">
+                <span class="job-guidance-number">03</span>
+                <div>
+                    <h3>Use accurate information</h3>
+                    <p>Keep your target role and job description relevant to the position you want.</p>
+                </div>
+            </div>
+
+            <div class="job-guidance-tip">
+                <strong>Did you know?</strong>
+                <p>You can start with just a job title and add a full job description later when one is available.</p>
+            </div>
+        </aside>
+
     </div>
+</section>
+{% endblock %}
 
-    <button type="submit">Save Job Details</button>
-    <button id="analyze-button" type="submit">
-    Save Details and Analyze Resume
-</button>
-
-<p id="loading-message" role="status" hidden>
-    Analyzing your resume with AI. This may take a little while.
-    Please keep this page open.
-</p>
-
+{% block scripts %}
 <script>
-    document.getElementById("job-details-form").addEventListener(
-        "submit",
-        function () {
-            const button = document.getElementById("analyze-button");
-            const message = document.getElementById("loading-message");
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("job-details-form");
+    const roleInput = document.getElementById("target_role");
+    const descriptionInput = document.getElementById("job_description");
+    const characterCount = document.getElementById("job-character-count");
+    const submitButton = document.getElementById("analyze-button");
+    const buttonText = document.getElementById("analyze-button-text");
+    const loadingMessage = document.getElementById("loading-message");
 
-            button.disabled = true;
-            button.textContent = "Analyzing...";
-            message.hidden = false;
+    function updateCharacterCount() {
+        characterCount.textContent =
+            `${descriptionInput.value.length.toLocaleString()} / 15,000`;
+    }
+
+    updateCharacterCount();
+    descriptionInput.addEventListener("input", updateCharacterCount);
+
+    form.addEventListener("submit", function (event) {
+        const hasRole = roleInput.value.trim().length > 0;
+        const hasDescription = descriptionInput.value.trim().length > 0;
+
+        if (!hasRole && !hasDescription) {
+            event.preventDefault();
+            roleInput.setCustomValidity(
+                "Enter a target job role or provide a job description."
+            );
+            roleInput.reportValidity();
+            roleInput.addEventListener("input", function clearRoleError() {
+                roleInput.setCustomValidity("");
+                roleInput.removeEventListener("input", clearRoleError);
+            }, { once: true });
+            return;
         }
-    );
-</script>
-</form>
 
+        submitButton.disabled = true;
+        buttonText.textContent = "Analyzing...";
+        loadingMessage.hidden = false;
+    });
+});
+</script>
 {% endblock %}

@@ -1,31 +1,148 @@
 
 {% extends "base.html" %}
-{% block title %}Register | Resume Analyzer{% endblock %}
+{% block title %}Create Account | Resume Analyzer{% endblock %}
 
 {% block content %}
-<h1>Create Account</h1>
+<div class="auth-layout">
 
-<form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <section class="auth-showcase">
+        <span class="auth-eyebrow">✦ YOUR CAREER JOURNEY STARTS HERE</span>
 
-    <label for="name">Full Name</label>
-    <input id="name" name="name" maxlength="100" required>
+        <h1>Turn your potential into your next opportunity.</h1>
 
-    <label for="email">Email</label>
-    <input id="email" type="email" name="email" maxlength="255" required>
+        <p>
+            Build a stronger resume, understand what employers are looking
+            for, and prepare for technical interviews with AI-powered insights.
+        </p>
 
-    <label for="password">Password</label>
-    <input id="password" type="password" name="password"
-           minlength="8" required>
+        <div class="auth-feature-list">
+            <div class="auth-feature">
+                <span class="auth-feature-icon">◈</span>
+                <div>
+                    <strong>Understand your resume</strong>
+                    <p>Explore ATS estimates, strengths, and areas to improve.</p>
+                </div>
+            </div>
 
-    <label for="confirm_password">Confirm Password</label>
-    <input id="confirm_password" type="password"
-           name="confirm_password" minlength="8" required>
+            <div class="auth-feature">
+                <span class="auth-feature-icon">◎</span>
+                <div>
+                    <strong>Find your skill gaps</strong>
+                    <p>Compare your experience with your target job requirements.</p>
+                </div>
+            </div>
 
-    <button type="submit">Register</button>
-</form>
+            <div class="auth-feature">
+                <span class="auth-feature-icon">✧</span>
+                <div>
+                    <strong>Prepare with confidence</strong>
+                    <p>Practice role-specific interview questions.</p>
+                </div>
+            </div>
+        </div>
 
-<p>Already have an account?
-    <a href="{{ url_for('main.login') }}">Log in</a>
-</p>
+        <span class="auth-showcase-footer">
+            YOUR NEXT CHAPTER BEGINS WITH ONE STEP
+        </span>
+    </section>
+
+    <section class="auth-card auth-login-card auth-register-card">
+
+        <div class="auth-mobile-brand">
+            <span class="brand-icon">R</span>
+            <strong>Resume<span class="brand-accent">Analyzer</span></strong>
+        </div>
+
+        <div class="auth-heading-icon" aria-hidden="true">✦</div>
+
+        <span class="eyebrow">GET STARTED FOR FREE</span>
+        <h2>Create your account</h2>
+
+        <p class="auth-description">
+            Set up your account to start improving your resume.
+        </p>
+
+        <form method="POST" action="{{ url_for('main.register') }}">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <div class="auth-field">
+                <label for="name">Full name</label>
+                <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    autocomplete="name"
+                    maxlength="100"
+                    required
+                >
+            </div>
+
+            <div class="auth-field">
+                <label for="email">Email address</label>
+                <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    maxlength="255"
+                    required
+                >
+            </div>
+
+            <div class="auth-field">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="At least 8 characters"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+                <span class="auth-field-hint">
+                    Use at least 8 characters.
+                </span>
+            </div>
+
+            <div class="auth-field">
+                <label for="confirm_password">Confirm password</label>
+                <input
+                    id="confirm_password"
+                    type="password"
+                    name="confirm_password"
+                    placeholder="Enter your password again"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+            </div>
+
+            <button class="btn btn-block auth-submit" type="submit">
+                Create Account <span aria-hidden="true">→</span>
+            </button>
+        </form>
+
+        <div class="auth-divider">
+            <span>ALREADY REGISTERED?</span>
+        </div>
+
+        <p class="auth-switch">
+            Already have an account?
+            <a href="{{ url_for('main.login') }}">Sign in</a>
+        </p>
+
+        <p class="auth-security-note">
+            Start building a stronger application, one step at a time.
+        </p>
+
+    </section>
+
+</div>
 {% endblock %}

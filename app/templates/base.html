@@ -4,15 +4,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="Analyze your resume, identify skill gaps, improve ATS compatibility, and prepare for interviews.">
+
     <title>{% block title %}Resume Analyzer{% endblock %}</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    {% block head %}{% endblock %}
 </head>
 <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <p role="status">{{ message }}</p>
-        {% endfor %}
-    {% endwith %}
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="{{ url_for('main.dashboard') if session.get('user_id') else url_for('main.login') }}">
+                <span class="brand-icon">R</span>
+                <span>Resume<span class="brand-accent">Analyzer</span></span>
+            </a>
 
-    {% block content %}{% endblock %}
+            {% if session.get('user_id') %}
+                <nav class="main-nav" aria-label="Main navigation">
+                    <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('main.upload_resume') }}">Analyze Resume</a>
+                    <a href="{{ url_for('main.history') }}">History</a>
+
+                    <form
+                        class="logout-form"
+                        action="{{ url_for('main.logout') }}"
+                        method="POST"
+                    >
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+                        <button class="btn btn-outline btn-small" type="submit">
+                            Log out
+                        </button>
+                    </form>
+                </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="page-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div
+                            class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }}"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p>Resume Analyzer · Build your next career opportunity.</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>
