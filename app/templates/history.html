@@ -1,11 +1,13 @@
+
 {% extends "base.html" %}
+
 {% block title %}Analysis History | Resume Analyzer{% endblock %}
 
 {% block content %}
 
 <h1>Analysis History</h1>
 
-<p>Review your previous resume analyses.</p>
+<p>Review your previous resume analyses and open their full results.</p>
 
 {% if analyses %}
 
@@ -18,6 +20,7 @@
             <th>Overall Match</th>
             <th>Status</th>
             <th>Date</th>
+            <th>Action</th>
         </tr>
     </thead>
 
@@ -25,6 +28,7 @@
         {% for analysis in analyses %}
         <tr>
             <td>{{ loop.index }}</td>
+
             <td>{{ analysis.target_role or "Not specified" }}</td>
 
             <td>
@@ -36,7 +40,8 @@
             </td>
 
             <td>
-                {% if analysis.analysis_result and analysis.analysis_result.get("overall_match_score") is not none %}
+                {% if analysis.analysis_result
+                      and analysis.analysis_result.get("overall_match_score") is not none %}
                     {{ analysis.analysis_result.get("overall_match_score") }}/100
                 {% else %}
                     N/A
@@ -50,6 +55,16 @@
                     {{ analysis.created_at.strftime("%d %b %Y, %I:%M %p") }}
                 {% else %}
                     N/A
+                {% endif %}
+            </td>
+
+            <td>
+                {% if analysis.status == "completed" and analysis.analysis_result %}
+                    <a href="{{ url_for('main.view_analysis_history', analysis_id=analysis.id) }}">
+                        View Details
+                    </a>
+                {% else %}
+                    Not available
                 {% endif %}
             </td>
         </tr>

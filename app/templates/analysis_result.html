@@ -170,18 +170,112 @@
     {% endif %}
 </section>
 
+
+
 <section>
-    <h2>Improvement Suggestions</h2>
+    <h2>Resume Improvement Checklist</h2>
+
+    <p>
+        Check off each recommendation as you complete it.
+        Your progress will be saved automatically.
+    </p>
+
     {% if result.improvement_suggestions %}
-        <ol>
+        <ul style="list-style: none; padding-left: 0;">
             {% for suggestion in result.improvement_suggestions %}
-                <li>{{ suggestion }}</li>
+                <li style="margin-bottom: 12px;">
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="improvement-checkbox"
+                            data-index="{{ loop.index0 }}"
+                            {% if loop.index0 in completed_suggestions %}
+                                checked
+                            {% endif %}
+                        >
+                        {{ suggestion }}
+                    </label>
+                </li>
             {% endfor %}
-        </ol>
+        </ul>
+
+        <p id="checklist-status" role="status" aria-live="polite">
+            Your progress is saved automatically.
+        </p>
     {% else %}
-        <p>No improvement suggestions were returned.</p>
+        <p>No improvement suggestions are available.</p>
     {% endif %}
 </section>
+
+<script>
+(function () {
+    const analysisId = {{ analysis_id | tojson }};
+    const csrfToken = {{ csrf_token() | tojson }};
+    const checkboxes = document.querySelectorAll(".improvement-checkbox");
+    const status = document.getElementById("checklist-status");
+
+    if (!checkboxes.length || !status) {
+        return;
+    }
+
+    let saving = false;
+    let pending = false;
+
+    async function saveChecklist() {
+        if (saving) {
+            pending = true;
+            return;
+        }
+
+        saving = true;
+
+        do {
+            pending = false;
+            status.textContent = "Saving progress...";
+
+            const completed = Array.from(checkboxes)
+                .filter((checkbox) => checkbox.checked)
+                .map((checkbox) => Number(checkbox.dataset.index));
+
+            try {
+                const response = await fetch(
+                    `/analysis/${analysisId}/checklist`,
+                    {
+                        method: "POST",
+                        headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": csrfToken
+                            },
+                        body: JSON.stringify({
+                            completed_suggestions: completed
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to save progress.");
+                }
+
+                status.textContent = "Progress saved.";
+            } catch (error) {
+                status.textContent =
+                    "Could not save progress. Please try changing the checkbox again.";
+                console.error("Checklist save failed:", error);
+            }
+        } while (pending);
+
+        saving = false;
+    }
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", saveChecklist);
+    });
+        })();
+</script>
+
+
 
 <section>
     <h2>Experience Assessment</h2>

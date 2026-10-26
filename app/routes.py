@@ -4,7 +4,17 @@ import re
 import uuid
 from functools import wraps
 from flask import session
-
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask import (
     Blueprint,
     current_app,
@@ -208,6 +218,39 @@ def history():
     return render_template(
         "history.html",
         analyses=analyses,
+    )
+
+@main_bp.route("/history/<int:analysis_id>")
+@login_required
+def view_analysis_history(analysis_id):
+    analysis = db.session.scalar(
+        select(AnalysisHistory).where(
+            AnalysisHistory.id == analysis_id,
+            AnalysisHistory.user_id == session["user_id"],
+        )
+    )
+
+    if analysis is None:
+        flash("Analysis not found.", "warning")
+        return redirect(url_for("main.history"))
+
+    result = analysis.analysis_result or {}
+    match_score = result.get("overall_match_score")
+
+    score_label = (
+        get_score_label(match_score)
+        if match_score is not None
+        else "Not available"
+    )
+
+    return render_template(
+        "analysis_result.html",
+        result=result,
+        match_score=match_score,
+        score_label=score_label,
+        target_role=analysis.target_role,
+        analysis_id=analysis.id,
+        completed_suggestions=analysis.completed_suggestions or [],
     )
 
 @main_bp.route("/upload", methods=["GET", "POST"])
@@ -417,8 +460,64 @@ def job_details():
         match_score=match_score,
         score_label=score_label,
         target_role=target_role,
+        analysis_id=analysis.id,
+        completed_suggestions=analysis.completed_suggestions or [],
     )
 
+
+@main_bp.route(
+    "/analysis/<int:analysis_id>/checklist",
+    methods=["POST"],
+)
+@login_required
+def update_improvement_checklist(analysis_id):
+    analysis = db.session.scalar(
+        select(AnalysisHistory).where(
+            AnalysisHistory.id == analysis_id,
+            AnalysisHistory.user_id == session["user_id"],
+        )
+    )
+
+    if analysis is None:
+        return jsonify({"error": "Analysis not found."}), 404
+
+    payload = request.get_json(silent=True)
+
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Invalid request data."}), 400
+
+    completed = payload.get("completed_suggestions")
+
+    if not isinstance(completed, list):
+        return jsonify({"error": "Invalid checklist data."}), 400
+
+    result = analysis.analysis_result or {}
+    suggestions = result.get("improvement_suggestions", [])
+
+    if not isinstance(suggestions, list):
+        return jsonify({"error": "Invalid analysis suggestions."}), 400
+
+    # Accept only valid suggestion indexes.
+    if any(
+        type(index) is not int or index < 0 or index >= len(suggestions)
+        for index in completed
+    ):
+        return jsonify({"error": "Invalid suggestion index."}), 400
+
+    try:
+        analysis.completed_suggestions = sorted(set(completed))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Unable to save improvement checklist."
+        )
+        return jsonify({"error": "Unable to save checklist progress."}), 500
+
+    return jsonify({
+        "success": True,
+        "completed_suggestions": analysis.completed_suggestions,
+    }), 200
 
 
 @main_bp.route("/logout", methods=["POST"])
