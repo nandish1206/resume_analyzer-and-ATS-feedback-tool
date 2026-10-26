@@ -3,7 +3,18 @@ import os
 import re
 import uuid
 from functools import wraps
-
+from flask import session
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask import (
     Blueprint,
     current_app,
@@ -19,10 +30,18 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import User
+from app.models import User, AnalysisHistory
 from app.utils.text_extraction import (
     extract_resume_text,
     ResumeExtractionError,
+)
+from app.utils.resume_analysis import (
+    analyze_resume,
+    ResumeAnalysisError,
+)
+from app.utils.score_calculator import (
+    calculate_resume_match_score,
+    get_score_label,
 )
 
 main_bp = Blueprint("main", __name__)
@@ -154,11 +173,85 @@ def login():
 @main_bp.route("/dashboard")
 @login_required
 def dashboard():
+    latest_analysis = db.session.execute(
+        select(AnalysisHistory)
+        .where(
+            AnalysisHistory.user_id == session["user_id"],
+            AnalysisHistory.status == "completed",
+        )
+        .order_by(AnalysisHistory.created_at.desc())
+    ).scalars().first()
+
+    match_score = None
+    score_label = None
+    ats_score = None
+    match_percentage = None
+
+    if latest_analysis and latest_analysis.analysis_result:
+        result = latest_analysis.analysis_result
+        match_score = result.get("overall_match_score")
+        ats_score = result.get("ats_score")
+        match_percentage = result.get("match_percentage")
+
+        if match_score is not None:
+            score_label = get_score_label(match_score)
+
     return render_template(
         "dashboard.html",
-        user_name=session.get("user_name", "User"),
+        user_name=session.get("user_name", ""),
+        match_score=match_score,
+        score_label=score_label,
+        ats_score=ats_score,
+        match_percentage=match_percentage,
     )
 
+
+@main_bp.route("/history")
+@login_required
+def history():
+    analyses = db.session.execute(
+        select(AnalysisHistory)
+        .where(AnalysisHistory.user_id == session["user_id"])
+        .order_by(AnalysisHistory.created_at.desc())
+    ).scalars().all()
+
+    return render_template(
+        "history.html",
+        analyses=analyses,
+    )
+
+@main_bp.route("/history/<int:analysis_id>")
+@login_required
+def view_analysis_history(analysis_id):
+    analysis = db.session.scalar(
+        select(AnalysisHistory).where(
+            AnalysisHistory.id == analysis_id,
+            AnalysisHistory.user_id == session["user_id"],
+        )
+    )
+
+    if analysis is None:
+        flash("Analysis not found.", "warning")
+        return redirect(url_for("main.history"))
+
+    result = analysis.analysis_result or {}
+    match_score = result.get("overall_match_score")
+
+    score_label = (
+        get_score_label(match_score)
+        if match_score is not None
+        else "Not available"
+    )
+
+    return render_template(
+        "analysis_result.html",
+        result=result,
+        match_score=match_score,
+        score_label=score_label,
+        target_role=analysis.target_role,
+        analysis_id=analysis.id,
+        completed_suggestions=analysis.completed_suggestions or [],
+    )
 
 @main_bp.route("/upload", methods=["GET", "POST"])
 @login_required
@@ -217,15 +310,17 @@ def upload_resume():
             )
             return redirect(url_for("main.upload_resume"))
 
-        flash("Resume uploaded and text extracted successfully.", "success")
+        session["resume_stored_filename"] = stored_filename
+        session["uploaded_filename"] = original_filename
 
-        return render_template(
-            "upload.html",
-            extracted_text=extracted_text,
-            uploaded_filename=original_filename,
+        flash(
+            "Resume uploaded successfully. Now enter your job details.",
+            "success",
         )
+        return redirect(url_for("main.job_details"))
 
     return render_template("upload.html")
+
 
 
 
@@ -235,56 +330,195 @@ def job_details():
     target_role = session.get("target_role", "")
     job_description = session.get("job_description", "")
 
-    if request.method == "POST":
-        target_role = request.form.get("target_role", "").strip()
-        job_description = request.form.get("job_description", "").strip()
+    if request.method == "GET":
+        return render_template(
+            "job_details.html",
+            target_role=target_role,
+            job_description=job_description,
+        )
 
-        # At least one field must be provided.
-        if not target_role and not job_description:
-            flash(
-                "Please enter a target job role, a job description, or both.",
-                "danger",
-            )
-            return render_template(
-                "job_details.html",
-                target_role=target_role,
-                job_description=job_description,
-            ), 400
+    target_role = request.form.get("target_role", "").strip()
+    job_description = request.form.get("job_description", "").strip()
 
-        if len(target_role) > 150:
-            flash(
-                "Target job role must not exceed 150 characters.",
-                "danger",
-            )
-            return render_template(
-                "job_details.html",
-                target_role=target_role,
-                job_description=job_description,
-            ), 400
+    if not target_role and not job_description:
+        flash(
+            "Enter a target job role, a job description, or both.",
+            "danger",
+        )
+        return render_template(
+            "job_details.html",
+            target_role=target_role,
+            job_description=job_description,
+        ), 400
 
-        if len(job_description) > 15000:
-            flash(
-                "Job description must not exceed 15,000 characters.",
-                "danger",
-            )
-            return render_template(
-                "job_details.html",
-                target_role=target_role,
-                job_description=job_description,
-            ), 400
+    if len(target_role) > 150:
+        flash("Target job role must not exceed 150 characters.", "danger")
+        return render_template(
+            "job_details.html",
+            target_role=target_role,
+            job_description=job_description,
+        ), 400
 
-        # Store the supplied values for later AI analysis.
-        session["target_role"] = target_role
-        session["job_description"] = job_description
+    if len(job_description) > 15000:
+        flash(
+            "Job description must not exceed 15,000 characters.",
+            "danger",
+        )
+        return render_template(
+            "job_details.html",
+            target_role=target_role,
+            job_description=job_description,
+        ), 400
 
-        flash("Job details saved successfully.", "success")
-        return redirect(url_for("main.job_details"))
+    stored_filename = session.get("resume_stored_filename")
+
+    if not stored_filename:
+        flash("Please upload your resume first.", "warning")
+        return redirect(url_for("main.upload_resume"))
+
+    if (
+        os.path.basename(stored_filename) != stored_filename
+        or not stored_filename.lower().endswith((".pdf", ".docx"))
+    ):
+        session.pop("resume_stored_filename", None)
+        flash("Invalid resume reference. Please upload again.", "danger")
+        return redirect(url_for("main.upload_resume"))
+
+    upload_path = os.path.join(
+        current_app.config["UPLOAD_FOLDER"],
+        stored_filename,
+    )
+
+    if not os.path.isfile(upload_path):
+        session.pop("resume_stored_filename", None)
+        flash("Resume not found. Please upload it again.", "danger")
+        return redirect(url_for("main.upload_resume"))
+
+    # Preserve submitted values if analysis fails.
+    session["target_role"] = target_role
+    session["job_description"] = job_description
+
+    try:
+        resume_text = extract_resume_text(upload_path)
+
+        result = analyze_resume(
+            resume_text=resume_text,
+            target_role=target_role,
+            job_description=job_description,
+        )
+
+        match_score = calculate_resume_match_score(result)
+        score_label = get_score_label(match_score)
+
+        result["overall_match_score"] = match_score
+
+        analysis = AnalysisHistory(
+            user_id=session["user_id"],
+            target_role=target_role or None,
+            ats_score=result["ats_score"],
+            status="completed",
+            analysis_result=result,
+        )
+
+        db.session.add(analysis)
+        db.session.commit()
+
+    except ResumeExtractionError as exc:
+        db.session.rollback()
+        flash(str(exc), "danger")
+        return redirect(url_for("main.upload_resume"))
+
+    except (ResumeAnalysisError, ValueError) as exc:
+        db.session.rollback()
+        current_app.logger.warning("Resume analysis failed: %s", exc)
+        flash(
+            "Analysis failed or timed out. Please try again.",
+            "danger",
+        )
+        return render_template(
+            "job_details.html",
+            target_role=target_role,
+            job_description=job_description,
+        ), 502
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Unable to save resume analysis.")
+        flash(
+            "Unable to save the analysis. Please try again.",
+            "danger",
+        )
+        return render_template(
+            "job_details.html",
+            target_role=target_role,
+            job_description=job_description,
+        ), 500
 
     return render_template(
-        "job_details.html",
+        "analysis_result.html",
+        result=result,
+        match_score=match_score,
+        score_label=score_label,
         target_role=target_role,
-        job_description=job_description,
+        analysis_id=analysis.id,
+        completed_suggestions=analysis.completed_suggestions or [],
     )
+
+
+@main_bp.route(
+    "/analysis/<int:analysis_id>/checklist",
+    methods=["POST"],
+)
+@login_required
+def update_improvement_checklist(analysis_id):
+    analysis = db.session.scalar(
+        select(AnalysisHistory).where(
+            AnalysisHistory.id == analysis_id,
+            AnalysisHistory.user_id == session["user_id"],
+        )
+    )
+
+    if analysis is None:
+        return jsonify({"error": "Analysis not found."}), 404
+
+    payload = request.get_json(silent=True)
+
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Invalid request data."}), 400
+
+    completed = payload.get("completed_suggestions")
+
+    if not isinstance(completed, list):
+        return jsonify({"error": "Invalid checklist data."}), 400
+
+    result = analysis.analysis_result or {}
+    suggestions = result.get("improvement_suggestions", [])
+
+    if not isinstance(suggestions, list):
+        return jsonify({"error": "Invalid analysis suggestions."}), 400
+
+    # Accept only valid suggestion indexes.
+    if any(
+        type(index) is not int or index < 0 or index >= len(suggestions)
+        for index in completed
+    ):
+        return jsonify({"error": "Invalid suggestion index."}), 400
+
+    try:
+        analysis.completed_suggestions = sorted(set(completed))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Unable to save improvement checklist."
+        )
+        return jsonify({"error": "Unable to save checklist progress."}), 500
+
+    return jsonify({
+        "success": True,
+        "completed_suggestions": analysis.completed_suggestions,
+    }), 200
+
 
 @main_bp.route("/logout", methods=["POST"])
 @login_required

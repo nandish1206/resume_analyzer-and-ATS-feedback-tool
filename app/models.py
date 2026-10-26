@@ -61,8 +61,14 @@ class AnalysisHistory(db.Model):
         nullable=False,
         default="pending",
     )
+
     analysis_result = db.Column(JSON, nullable=True)
 
+    completed_suggestions = db.Column(
+        JSON,
+        nullable=False,
+        default=list,
+    )
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc),

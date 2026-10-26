@@ -1,0 +1,86 @@
+
+{% extends "base.html" %}
+
+{% block title %}Analysis History | Resume Analyzer{% endblock %}
+
+{% block content %}
+
+<h1>Analysis History</h1>
+
+<p>Review your previous resume analyses and open their full results.</p>
+
+{% if analyses %}
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Target Role</th>
+            <th>ATS Score</th>
+            <th>Overall Match</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for analysis in analyses %}
+        <tr>
+            <td>{{ loop.index }}</td>
+
+            <td>{{ analysis.target_role or "Not specified" }}</td>
+
+            <td>
+                {% if analysis.ats_score is not none %}
+                    {{ "%.0f"|format(analysis.ats_score) }}/100
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+
+            <td>
+                {% if analysis.analysis_result
+                      and analysis.analysis_result.get("overall_match_score") is not none %}
+                    {{ analysis.analysis_result.get("overall_match_score") }}/100
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+
+            <td>{{ analysis.status|capitalize }}</td>
+
+            <td>
+                {% if analysis.created_at %}
+                    {{ analysis.created_at.strftime("%d %b %Y, %I:%M %p") }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+
+            <td>
+                {% if analysis.status == "completed" and analysis.analysis_result %}
+                    <a href="{{ url_for('main.view_analysis_history', analysis_id=analysis.id) }}">
+                        View Details
+                    </a>
+                {% else %}
+                    Not available
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+
+<p>No analysis history found yet.</p>
+<p>Upload a resume and complete an analysis to see it here.</p>
+
+{% endif %}
+
+<p>
+    <a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+</p>
+
+{% endblock %}
