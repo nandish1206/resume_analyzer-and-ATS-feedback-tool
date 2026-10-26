@@ -4,83 +4,169 @@
 {% block title %}Analysis History | Resume Analyzer{% endblock %}
 
 {% block content %}
+<section class="history-page">
 
-<h1>Analysis History</h1>
+    <div class="history-hero">
+        <div>
+            <span class="eyebrow">YOUR CAREER JOURNEY</span>
+            <h1>Analysis <span class="text-gradient">History</span></h1>
+            <p>Review your previous resume analyses, track your scores, and revisit your recommendations.</p>
+        </div>
 
-<p>Review your previous resume analyses and open their full results.</p>
+        <a class="btn history-new-analysis"
+           href="{{ url_for('main.upload_resume') }}">
+            + New Analysis
+        </a>
+    </div>
 
-{% if analyses %}
+    <div class="history-summary">
+        <div class="history-stat">
+            <span class="history-stat-icon">▤</span>
+            <div>
+                <span class="history-stat-label">Total Analyses</span>
+                <strong>{{ analyses|length }}</strong>
+            </div>
+        </div>
 
-<table>
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Target Role</th>
-            <th>ATS Score</th>
-            <th>Overall Match</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Action</th>
-        </tr>
-    </thead>
+        <div class="history-stat">
+            <span class="history-stat-icon history-stat-icon-green">✓</span>
+            <div>
+                <span class="history-stat-label">Completed</span>
+                <strong>{{ analyses|selectattr("status", "equalto", "completed")|list|length }}</strong>
+            </div>
+        </div>
+    </div>
 
-    <tbody>
-        {% for analysis in analyses %}
-        <tr>
-            <td>{{ loop.index }}</td>
+    <section class="history-panel">
+        <div class="history-panel-heading">
+            <div>
+                <h2>Your previous analyses</h2>
+                <p>Your resume analysis records and results.</p>
+            </div>
+            <span class="history-record-count">
+                {{ analyses|length }} record{% if analyses|length != 1 %}s{% endif %}
+            </span>
+        </div>
 
-            <td>{{ analysis.target_role or "Not specified" }}</td>
+        {% if analyses %}
+        <div class="history-table-wrap">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Target Role</th>
+                        <th>ATS Score</th>
+                        <th>Overall Match</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
 
-            <td>
-                {% if analysis.ats_score is not none %}
-                    {{ "%.0f"|format(analysis.ats_score) }}/100
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
+                <tbody>
+                    {% for analysis in analyses %}
+                    <tr>
+                        <td class="history-index">{{ loop.index }}</td>
 
-            <td>
-                {% if analysis.analysis_result
-                      and analysis.analysis_result.get("overall_match_score") is not none %}
-                    {{ analysis.analysis_result.get("overall_match_score") }}/100
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
+                        <td>
+                            <div class="history-role">
+                                <span class="history-role-icon">▤</span>
+                                <div>
+                                    <strong>{{ analysis.target_role or "Not specified" }}</strong>
+                                    <span>Resume analysis</span>
+                                </div>
+                            </div>
+                        </td>
 
-            <td>{{ analysis.status|capitalize }}</td>
+                        <td>
+                            {% if analysis.ats_score is not none %}
+                                <div class="history-score">
+                                    <strong>{{ "%.0f"|format(analysis.ats_score) }}</strong>
+                                    <span>/100</span>
+                                </div>
+                                <div class="history-score-track">
+                                    <span style="width: {{ [[analysis.ats_score|float, 0]|max, 100]|min }}%;"></span>
+                                </div>
+                            {% else %}
+                                <span class="history-na">N/A</span>
+                            {% endif %}
+                        </td>
 
-            <td>
-                {% if analysis.created_at %}
-                    {{ analysis.created_at.strftime("%d %b %Y, %I:%M %p") }}
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
+                        <td>
+                            {% if analysis.analysis_result
+                                  and analysis.analysis_result.get("overall_match_score") is not none %}
+                                <div class="history-score">
+                                    <strong>{{ analysis.analysis_result.get("overall_match_score") }}</strong>
+                                    <span>/100</span>
+                                </div>
+                            {% else %}
+                                <span class="history-na">N/A</span>
+                            {% endif %}
+                        </td>
 
-            <td>
-                {% if analysis.status == "completed" and analysis.analysis_result %}
-                    <a href="{{ url_for('main.view_analysis_history', analysis_id=analysis.id) }}">
-                        View Details
-                    </a>
-                {% else %}
-                    Not available
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+                        <td>
+                            {% if analysis.status == "completed" %}
+                                <span class="history-status status-completed">
+                                    <span></span> Completed
+                                </span>
+                            {% elif analysis.status == "failed" %}
+                                <span class="history-status status-failed">
+                                    <span></span> Failed
+                                </span>
+                            {% elif analysis.status == "processing" %}
+                                <span class="history-status status-processing">
+                                    <span></span> Processing
+                                </span>
+                            {% else %}
+                                <span class="history-status status-other">
+                                    <span></span> {{ analysis.status|capitalize }}
+                                </span>
+                            {% endif %}
+                        </td>
 
-{% else %}
+                        <td>
+                            <div class="history-date">
+                                {% if analysis.created_at %}
+                                    <strong>{{ analysis.created_at.strftime("%d %b %Y") }}</strong>
+                                    <span>{{ analysis.created_at.strftime("%I:%M %p") }}</span>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </td>
 
-<p>No analysis history found yet.</p>
-<p>Upload a resume and complete an analysis to see it here.</p>
+                        <td>
+                            {% if analysis.status == "completed" and analysis.analysis_result %}
+                                <a class="history-view-link"
+                                   href="{{ url_for('main.view_analysis_history', analysis_id=analysis.id) }}">
+                                    View Results <span aria-hidden="true">→</span>
+                                </a>
+                            {% else %}
+                                <span class="history-unavailable">Not available</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="history-empty-state">
+            <div class="history-empty-icon">▤</div>
+            <h3>Your history starts here</h3>
+            <p>You haven't completed any resume analyses yet. Upload your resume to see your scores and recommendations here.</p>
+            <a class="btn history-new-analysis"
+               href="{{ url_for('main.upload_resume') }}">
+                Analyze My Resume →
+            </a>
+        </div>
+        {% endif %}
+    </section>
 
-{% endif %}
+    <a class="history-back-link"
+       href="{{ url_for('main.dashboard') }}">
+        <span aria-hidden="true">←</span> Back to Dashboard
+    </a>
 
-<p>
-    <a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
-</p>
-
+</section>
 {% endblock %}

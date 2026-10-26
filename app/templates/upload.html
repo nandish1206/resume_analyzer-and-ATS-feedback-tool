@@ -4,40 +4,203 @@
 {% block title %}Upload Resume | Resume Analyzer{% endblock %}
 
 {% block content %}
-<h2>Upload Your Resume</h2>
+<section class="upload-page">
 
-<p>Upload your resume in PDF or DOCX format.</p>
-<p>Maximum file size: 5 MB.</p>
+    <div class="upload-heading">
+        <span class="eyebrow">AI-POWERED CAREER TOOLS</span>
+        <h1>Let's analyze your <span class="text-gradient">resume.</span></h1>
+        <p>Upload your resume to get started. We'll help you identify opportunities to improve your profile and prepare for your next role.</p>
+    </div>
 
-<form method="POST" enctype="multipart/form-data">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="upload-layout">
 
-    <label for="resume">Choose your resume:</label>
-    <input
-        type="file"
-        id="resume"
-        name="resume"
-        accept=".pdf,.docx"
-        required
-    >
+        <section class="card upload-card">
+            <div class="upload-icon">
+                <svg width="34" height="34" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="1.7"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M12 16V4"></path>
+                    <path d="m7 9 5-5 5 5"></path>
+                    <path d="M20 16.5v2A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5v-2"></path>
+                </svg>
+            </div>
 
-    <button type="submit">Upload Resume</button>
-</form>
+            <h2>Upload your resume</h2>
+            <p class="upload-subtitle">Choose a file from your device to begin.</p>
 
-{% if extracted_text %}
-    <hr>
+            <form method="POST" enctype="multipart/form-data" id="resume-upload-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <h2>Extracted Resume Text</h2>
+                <label class="file-dropzone" for="resume" id="file-dropzone">
+                    <span class="file-drop-icon">↑</span>
+                    <strong id="file-title">Click to browse files</strong>
+                    <span id="file-description">or select a PDF or DOCX document</span>
+                    <span class="file-format-badge">PDF / DOCX · Max 5 MB</span>
+                </label>
 
-    <p>
-        <strong>File:</strong> {{ uploaded_filename }}
-    </p>
+                <input
+                    type="file"
+                    id="resume"
+                    name="resume"
+                    accept=".pdf,.docx"
+                    required
+                    class="file-input-hidden"
+                >
 
-    <textarea
-        rows="20"
-        cols="80"
-        readonly
-    >{{ extracted_text }}</textarea>
-{% endif %}
+                <div class="upload-file-error" id="upload-file-error"
+                     role="alert" aria-live="polite"></div>
 
+                <button type="submit" class="btn upload-submit" id="upload-submit">
+                    Upload and Continue
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
+
+            <div class="upload-privacy">
+                <span aria-hidden="true">✓</span>
+                Upload only a resume you are authorized to share.
+            </div>
+        </section>
+
+        <aside class="upload-benefits">
+            <div class="benefits-heading">
+                <span class="benefits-sparkle">✦</span>
+                <h3>What you'll get</h3>
+                <p>Turn your resume into a clearer career plan.</p>
+            </div>
+
+            <div class="benefit-item">
+                <span class="benefit-number">01</span>
+                <div>
+                    <h4>Resume insights</h4>
+                    <p>Review your resume and identify areas to improve.</p>
+                </div>
+            </div>
+
+            <div class="benefit-item">
+                <span class="benefit-number">02</span>
+                <div>
+                    <h4>Skill gap analysis</h4>
+                    <p>Understand which skills you may need for your target role.</p>
+                </div>
+            </div>
+
+            <div class="benefit-item">
+                <span class="benefit-number">03</span>
+                <div>
+                    <h4>Interview preparation</h4>
+                    <p>Get relevant questions to help you practice.</p>
+                </div>
+            </div>
+
+            <div class="upload-tip">
+                <strong>Quick tip</strong>
+                <p>Use a readable resume with clear headings and accurate contact details for better text extraction.</p>
+            </div>
+        </aside>
+
+    </div>
+
+    {% if extracted_text %}
+    <section class="card extracted-resume">
+        <div class="extracted-heading">
+            <div>
+                <span class="eyebrow">TEXT EXTRACTION</span>
+                <h2>Extracted resume text</h2>
+                <p>Review the text extracted from your uploaded document.</p>
+            </div>
+            <span class="extracted-status">Ready to review</span>
+        </div>
+
+        <div class="extracted-file">
+            <span class="extracted-file-icon">DOC</span>
+            <div>
+                <strong>{{ uploaded_filename }}</strong>
+                <span>Extracted document content</span>
+            </div>
+        </div>
+
+        <textarea
+            rows="18"
+            readonly
+            aria-label="Extracted resume text"
+            class="extracted-textarea"
+        >{{ extracted_text }}</textarea>
+    </section>
+    {% endif %}
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const fileInput = document.getElementById("resume");
+    const dropzone = document.getElementById("file-dropzone");
+    const fileTitle = document.getElementById("file-title");
+    const fileDescription = document.getElementById("file-description");
+    const errorBox = document.getElementById("upload-file-error");
+    const form = document.getElementById("resume-upload-form");
+    const submitButton = document.getElementById("upload-submit");
+
+    const maxSize = 5 * 1024 * 1024;
+    const allowedExtensions = [".pdf", ".docx"];
+
+    function validateFile() {
+        const file = fileInput.files[0];
+        errorBox.textContent = "";
+        dropzone.classList.remove("file-invalid");
+
+        if (!file) {
+            fileTitle.textContent = "Click to browse files";
+            fileDescription.textContent = "or select a PDF or DOCX document";
+            dropzone.classList.remove("file-selected");
+            return true;
+        }
+
+        const fileName = file.name.toLowerCase();
+        const validExtension = allowedExtensions.some(
+            extension => fileName.endsWith(extension)
+        );
+
+        if (!validExtension) {
+            errorBox.textContent = "Please select a PDF or DOCX file.";
+            dropzone.classList.add("file-invalid");
+            return false;
+        }
+
+        if (file.size > maxSize) {
+            errorBox.textContent = "The file exceeds 5 MB. Please choose a smaller file.";
+            dropzone.classList.add("file-invalid");
+            return false;
+        }
+
+        fileTitle.textContent = file.name;
+        fileDescription.textContent =
+            `${(file.size / (1024 * 1024)).toFixed(2)} MB · Ready to upload`;
+
+        dropzone.classList.add("file-selected");
+        return true;
+    }
+
+    fileInput.addEventListener("change", validateFile);
+
+    form.addEventListener("submit", function (event) {
+        if (!validateFile()) {
+            event.preventDefault();
+            return;
+        }
+
+        if (!fileInput.files.length) {
+            event.preventDefault();
+            errorBox.textContent = "Please select your resume before continuing.";
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.innerHTML = "Uploading resume...";
+    });
+});
+</script>
 {% endblock %}

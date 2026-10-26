@@ -3,21 +3,114 @@
 {% block title %}Login | Resume Analyzer{% endblock %}
 
 {% block content %}
-<h1>Login</h1>
+<div class="auth-layout">
 
-<form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <section class="auth-showcase">
+        <span class="auth-eyebrow">✦ AI-POWERED CAREER TOOLS</span>
 
-    <label for="email">Email</label>
-    <input id="email" type="email" name="email" required>
+        <h1>Your next career move starts here.</h1>
 
-    <label for="password">Password</label>
-    <input id="password" type="password" name="password" required>
+        <p>
+            Understand your resume, discover skill gaps, and prepare
+            for interviews with personalized AI-powered insights.
+        </p>
 
-    <button type="submit">Log In</button>
-</form>
+        <div class="auth-feature-list">
+            <div class="auth-feature">
+                <span class="auth-feature-icon">◈</span>
+                <div>
+                    <strong>Resume intelligence</strong>
+                    <p>Understand your strengths and improvement areas.</p>
+                </div>
+            </div>
 
-<p>Don't have an account?
-    <a href="{{ url_for('main.register') }}">Register</a>
-</p>
+            <div class="auth-feature">
+                <span class="auth-feature-icon">◎</span>
+                <div>
+                    <strong>Job-specific insights</strong>
+                    <p>See how your resume aligns with your target role.</p>
+                </div>
+            </div>
+
+            <div class="auth-feature">
+                <span class="auth-feature-icon">✧</span>
+                <div>
+                    <strong>Interview preparation</strong>
+                    <p>Practice relevant questions for your next opportunity.</p>
+                </div>
+            </div>
+        </div>
+
+        <span class="auth-showcase-footer">
+            BUILT TO HELP YOU MOVE FORWARD
+        </span>
+    </section>
+
+    <section class="auth-card auth-login-card">
+        <div class="auth-mobile-brand">
+            <span class="brand-icon">R</span>
+            <strong>Resume<span class="brand-accent">Analyzer</span></strong>
+        </div>
+
+        <div class="auth-heading-icon" aria-hidden="true">↗</div>
+
+        <span class="eyebrow">WELCOME BACK</span>
+        <h2>Sign in to your account</h2>
+
+        <p class="auth-description">
+            Continue your resume analysis and career preparation.
+        </p>
+
+        <form method="POST" action="{{ url_for('main.login') }}">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <div class="auth-field">
+                <label for="email">Email address</label>
+                <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    maxlength="255"
+                    required
+                >
+            </div>
+
+            <div class="auth-field">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button class="btn btn-block auth-submit" type="submit">
+                Sign In <span aria-hidden="true">→</span>
+            </button>
+        </form>
+
+        <div class="auth-divider">
+            <span>NEW TO RESUME ANALYZER?</span>
+        </div>
+
+        <p class="auth-switch">
+            Don't have an account?
+            <a href="{{ url_for('main.register') }}">Create an account</a>
+        </p>
+
+        <p class="auth-security-note">
+            Your career journey starts with one step.
+        </p>
+    </section>
+
+</div>
 {% endblock %}

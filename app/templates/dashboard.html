@@ -1,89 +1,215 @@
+
 {% extends "base.html" %}
+
 {% block title %}Dashboard | Resume Analyzer{% endblock %}
 
 {% block content %}
 
-<h1>Resume Analyzer and ATS Feedback Tool</h1>
+<section class="dashboard-hero">
+    <div class="dashboard-hero-content">
+        <span class="eyebrow">
+            <span class="status-dot"></span>
+            AI CAREER INTELLIGENCE
+        </span>
 
-<h2>Welcome, {{ user_name }}!</h2>
-<p>You are logged in successfully.</p>
+        <h1>Your next opportunity starts here.</h1>
 
-<hr>
+        <p>
+            Welcome back, {{ user_name }}. Analyze your resume,
+            uncover skill gaps, and prepare confidently for your next interview.
+        </p>
 
-<h2>Resume Match Score</h2>
+        <div class="hero-actions">
+            <a class="btn" href="{{ url_for('main.upload_resume') }}">
+                <span aria-hidden="true">✦</span>
+                Analyze My Resume
+            </a>
 
-{% if match_score is not none %}
-
-    <h3>{{ match_score }}/100 — {{ score_label }}</h3>
-
-    <div
-        role="progressbar"
-        aria-label="Estimated resume compatibility score"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        aria-valuenow="{{ match_score }}"
-        style="width: 100%; max-width: 500px; height: 18px;
-               background-color: #e5e7eb; border-radius: 10px;
-               overflow: hidden;"
-    >
-        <div
-            style="width: {{ match_score }}%; height: 100%;
-                   background-color: #16a34a;"
-        ></div>
+            <a class="btn btn-outline hero-secondary"
+               href="{{ url_for('main.history') }}">
+                View Previous Analyses
+            </a>
+        </div>
     </div>
 
-    <p><strong>ATS Score:</strong> {{ ats_score }}/100</p>
-    <p><strong>Job Match:</strong> {{ match_percentage }}%</p>
+    <div class="hero-decoration" aria-hidden="true">
+        <div class="hero-orbit orbit-one"></div>
+        <div class="hero-orbit orbit-two"></div>
+        <div class="hero-orbit orbit-three"></div>
 
-    <p>
-        This score is an AI-generated estimate, not a guaranteed
-        score from an actual ATS platform.
-    </p>
+        <div class="hero-center">
+            <span>AI</span>
+            <small>CAREER<br>INSIGHTS</small>
+        </div>
 
-{% else %}
+        <span class="floating-chip chip-top">ATS Insights</span>
+        <span class="floating-chip chip-bottom">Skill Matching</span>
+    </div>
+</section>
 
-    <p>No completed resume analysis is available yet.</p>
-    <p>Upload your resume and complete an analysis to see your score.</p>
+<section class="dashboard-section">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">YOUR PERFORMANCE</span>
+            <h2>Resume Overview</h2>
+            <p>Your latest completed analysis at a glance.</p>
+        </div>
 
-{% endif %}
+        <a class="text-link" href="{{ url_for('main.history') }}">
+            View history →
+        </a>
+    </div>
 
-<hr>
+    {% if match_score is not none %}
 
-<h2>Resume Analysis</h2>
+        <div class="dashboard-metrics">
 
-<p>
-    <a href="{{ url_for('main.upload_resume') }}">
-        Upload Your Resume (PDF or DOCX)
-    </a>
-</p>
+            <article class="metric-card metric-primary">
+                <div class="metric-top">
+                    <span class="metric-icon">◈</span>
+                    <span class="metric-label">Resume Match</span>
+                </div>
 
-<p>
-    <a href="{{ url_for('main.job_details') }}">
-        Enter Target Job Details
-    </a>
-</p>
+                <div class="metric-value">
+                    {{ match_score }}<span>/100</span>
+                </div>
 
-<hr>
+                <div class="metric-track"
+                     role="progressbar"
+                     aria-label="Resume match score"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ match_score }}">
+                    <div class="metric-fill"
+                         style="width: {{ match_score }}%"></div>
+                </div>
 
-<h2>Analysis History</h2>
+                <p class="metric-note">{{ score_label }}</p>
+            </article>
 
-<p>View your previous resume analyses and their scores.</p>
+            <article class="metric-card">
+                <div class="metric-top">
+                    <span class="metric-icon icon-purple">✧</span>
+                    <span class="metric-label">ATS Score</span>
+                </div>
 
-<p>
-    <a href="{{ url_for('main.history') }}">
-        View Analysis History
-    </a>
-</p>
+                <div class="metric-value">
+                    {{ ats_score if ats_score is not none else "—" }}
+                    <span>/100</span>
+                </div>
 
-<hr>
+                <p class="metric-note">
+                    Estimated resume compatibility
+                </p>
+            </article>
 
-<form method="POST" action="{{ url_for('main.logout') }}">
-    <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
-    >
-    <button type="submit">Log Out</button>
+            <article class="metric-card">
+                <div class="metric-top">
+                    <span class="metric-icon icon-teal">◎</span>
+                    <span class="metric-label">Job Match</span>
+                </div>
+
+                <div class="metric-value">
+                    {{ match_percentage if match_percentage is not none else "—" }}
+                    <span>%</span>
+                </div>
+
+                <p class="metric-note">
+                    Alignment with the target role
+                </p>
+            </article>
+
+        </div>
+
+        <p class="dashboard-disclaimer">
+            <span aria-hidden="true">ⓘ</span>
+            These are AI-generated estimates, not guaranteed scores from an actual ATS platform.
+        </p>
+
+    {% else %}
+
+        <div class="empty-state">
+            <div class="empty-state-icon" aria-hidden="true">✦</div>
+            <h3>Your career insights are waiting</h3>
+            <p>
+                Complete your first resume analysis to see your match score,
+                ATS estimate, and job alignment here.
+            </p>
+            <a class="btn" href="{{ url_for('main.upload_resume') }}">
+                Start Your First Analysis →
+            </a>
+        </div>
+
+    {% endif %}
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">GET STARTED</span>
+            <h2>Move your career forward</h2>
+            <p>Choose what you would like to do next.</p>
+        </div>
+    </div>
+
+    <div class="action-grid">
+
+        <a class="action-card" href="{{ url_for('main.upload_resume') }}">
+            <div class="action-icon action-blue">↥</div>
+            <span class="action-arrow">↗</span>
+            <h3>Analyze Your Resume</h3>
+            <p>
+                Upload a PDF or DOCX resume and discover your strengths,
+                missing skills, and improvement opportunities.
+            </p>
+            <span class="action-link">Start analysis →</span>
+        </a>
+
+        <a class="action-card" href="{{ url_for('main.job_details') }}">
+            <div class="action-icon action-purple">◎</div>
+            <span class="action-arrow">↗</span>
+            <h3>Target a Job Role</h3>
+            <p>
+                Provide a target role or job description to get
+                more relevant resume feedback.
+            </p>
+            <span class="action-link">Enter job details →</span>
+        </a>
+
+        <a class="action-card" href="{{ url_for('main.history') }}">
+            <div class="action-icon action-teal">▤</div>
+            <span class="action-arrow">↗</span>
+            <h3>Review Your Progress</h3>
+            <p>
+                Revisit saved analyses, review recommendations,
+                and continue preparing for interviews.
+            </p>
+            <span class="action-link">Open history →</span>
+        </a>
+
+    </div>
+</section>
+
+<section class="dashboard-tip">
+    <div class="tip-icon" aria-hidden="true">✧</div>
+    <div>
+        <h3>Make every application count</h3>
+        <p>
+            Tailor your resume to the job description and support
+            your skills with specific project examples.
+        </p>
+    </div>
+</section>
+
+<form class="dashboard-logout"
+      method="POST"
+      action="{{ url_for('main.logout') }}">
+    <input type="hidden"
+           name="csrf_token"
+           value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-outline">
+        Log out
+    </button>
 </form>
 
 {% endblock %}
