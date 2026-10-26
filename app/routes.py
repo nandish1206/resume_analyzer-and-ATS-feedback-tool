@@ -1,4 +1,7 @@
-
+from app.utils.interview_questions import (
+    generate_interview_questions,
+    InterviewQuestionError,
+)
 import os
 import re
 import uuid
@@ -412,6 +415,8 @@ def job_details():
 
         result["overall_match_score"] = match_score
 
+        result["_interview_job_description"] = job_description
+        result["_interview_resume_context"] = resume_text[:12000]
         analysis = AnalysisHistory(
             user_id=session["user_id"],
             target_role=target_role or None,
@@ -464,6 +469,89 @@ def job_details():
         completed_suggestions=analysis.completed_suggestions or [],
     )
 
+
+@main_bp.route(
+    "/analysis/<int:analysis_id>/interview-questions",
+    methods=["POST"],
+)
+@login_required
+def generate_more_interview_questions(analysis_id):
+    # Only allow the owner of this analysis to access it.
+    analysis = db.session.scalar(
+        select(AnalysisHistory).where(
+            AnalysisHistory.id == analysis_id,
+            AnalysisHistory.user_id == session["user_id"],
+        )
+    )
+
+    if analysis is None:
+        return jsonify({"error": "Analysis not found."}), 404
+
+    result = analysis.analysis_result or {}
+
+    if not isinstance(result, dict):
+        return jsonify({"error": "Invalid analysis data."}), 400
+
+    target_role = (analysis.target_role or "").strip()
+    job_description = result.get("_interview_job_description", "")
+    resume_text = result.get("_interview_resume_context", "")
+
+    if not target_role and not job_description:
+        return jsonify({
+            "error": (
+                "No target role or job description was saved "
+                "for this analysis. Please create a new analysis."
+            )
+        }), 400
+
+    existing_questions = result.get("interview_questions", [])
+
+    if not isinstance(existing_questions, list):
+        existing_questions = []
+
+    try:
+        # Generate five new questions, excluding existing questions.
+        new_questions = generate_interview_questions(
+            target_role=target_role,
+            job_description=job_description,
+            resume_text=resume_text,
+            count=5,
+            existing_questions=existing_questions,
+        )
+
+        # Append questions instead of replacing the existing list.
+        updated_questions = existing_questions + new_questions
+        result["interview_questions"] = updated_questions
+        analysis.analysis_result = result
+
+        db.session.commit()
+
+    except (InterviewQuestionError, ValueError) as exc:
+        db.session.rollback()
+        current_app.logger.warning(
+            "Interview question generation failed: %s", exc
+        )
+        return jsonify({
+            "error": (
+                "Unable to generate five new questions. "
+                "Please try again."
+            )
+        }), 502
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Unable to save generated interview questions."
+        )
+        return jsonify({
+            "error": "Unable to save the new questions. Please try again."
+        }), 500
+
+    return jsonify({
+        "success": True,
+        "new_questions": new_questions,
+        "total_questions": len(updated_questions),
+    }), 200
 
 @main_bp.route(
     "/analysis/<int:analysis_id>/checklist",

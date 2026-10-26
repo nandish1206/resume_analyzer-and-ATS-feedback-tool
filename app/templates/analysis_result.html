@@ -285,18 +285,103 @@
     <p>{{ result.education_assessment }}</p>
 </section>
 
-<section>
+
+<section id="interview-questions-section">
     <h2>Interview Questions</h2>
-    {% if result.interview_questions %}
-        <ol>
-            {% for question in result.interview_questions %}
-                <li>{{ question }}</li>
-            {% endfor %}
-        </ol>
-    {% else %}
-        <p>No interview questions were generated.</p>
-    {% endif %}
+
+    <p>
+        Questions are generated based on your target role or job description.
+        Click below to generate five more questions.
+    </p>
+
+    <ol id="interview-questions-list">
+        {% for question in result.interview_questions or [] %}
+            <li>{{ question }}</li>
+        {% endfor %}
+    </ol>
+
+    <p id="interview-questions-status" role="status" aria-live="polite">
+        {{ (result.interview_questions or []) | length }} questions available.
+    </p>
+
+    <button
+        type="button"
+        id="generate-more-questions"
+        {% if not analysis_id %}disabled{% endif %}
+    >
+        Generate More Questions (+5)
+    </button>
 </section>
+
+<script>
+(function () {
+    const analysisId = {{ analysis_id | tojson }};
+    const csrfToken = {{ csrf_token() | tojson }};
+    const button = document.getElementById("generate-more-questions");
+    const list = document.getElementById("interview-questions-list");
+    const status = document.getElementById("interview-questions-status");
+
+    if (!button || !list || !status || !analysisId) {
+        return;
+    }
+
+    button.addEventListener("click", async function () {
+        if (button.disabled) {
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Generating questions...";
+        status.textContent = "Gemini is generating five new questions. Please wait.";
+
+        try {
+            const response = await fetch(
+                `/analysis/${analysisId}/interview-questions`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({})
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Unable to generate more questions."
+                );
+            }
+
+            if (!Array.isArray(data.new_questions) ||
+                data.new_questions.length !== 5) {
+                throw new Error("The server did not return five new questions.");
+            }
+
+            data.new_questions.forEach(function (question) {
+                const item = document.createElement("li");
+                item.textContent = question;
+                list.appendChild(item);
+            });
+
+            status.textContent =
+                `${data.total_questions} questions available. Five new questions added.`;
+
+        } catch (error) {
+            status.textContent = error.message ||
+                "Unable to generate questions. Please try again.";
+            console.error("Interview question generation failed:", error);
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "Generate More Questions (+5)";
+        }
+    });
+})();
+</script>
+
 
 <hr>
 
