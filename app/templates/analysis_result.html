@@ -53,6 +53,8 @@
 
 <section>
     <h2>Matched Skills</h2>
+    <p>Skills identified in your resume that match the job requirements.</p>
+
     {% if result.matched_skills %}
         <ul>
             {% for skill in result.matched_skills %}
@@ -64,8 +66,12 @@
     {% endif %}
 </section>
 
+<hr>
+
 <section>
     <h2>Missing Skills</h2>
+    <p>Skills the AI identified as required but not demonstrated in your resume.</p>
+
     {% if result.missing_skills %}
         <ul>
             {% for skill in result.missing_skills %}
@@ -76,6 +82,67 @@
         <p>No missing skills were identified.</p>
     {% endif %}
 </section>
+
+<hr>
+
+<section>
+    <h2>Underrepresented Skills</h2>
+    <p>
+        Skills mentioned in your resume that may need stronger
+        project details or supporting evidence.
+    </p>
+
+    {% if result.underrepresented_skills %}
+        {% for item in result.underrepresented_skills %}
+            <article>
+                <h3>{{ item.skill }}</h3>
+
+                <p>
+                    <strong>Resume evidence:</strong>
+                    {{ item.resume_evidence }}
+                </p>
+
+                <p>
+                    <strong>Evidence gap:</strong>
+                    {{ item.evidence_gap }}
+                </p>
+            </article>
+            {% if not loop.last %}<hr>{% endif %}
+        {% endfor %}
+    {% else %}
+        <p>No underrepresented skills were identified.</p>
+    {% endif %}
+</section>
+
+<hr>
+
+<section>
+    <h2>Skill Gap Recommendations</h2>
+    <p>Prioritized actions to help you improve your alignment with the target role.</p>
+
+    {% if result.skill_gap_recommendations %}
+        {% for item in result.skill_gap_recommendations %}
+            <article>
+                <h3>{{ item.skill }}</h3>
+
+                <p>
+                    <strong>Priority:</strong>
+                    {{ item.priority }}
+                </p>
+
+                <p>
+                    <strong>Recommended action:</strong>
+                    {{ item.recommendation }}
+                </p>
+            </article>
+            {% if not loop.last %}<hr>{% endif %}
+        {% endfor %}
+    {% else %}
+        <p>No skill-gap recommendations were returned.</p>
+    {% endif %}
+</section>
+
+<hr>
 
 <section>
     <h2>Strengths</h2>
